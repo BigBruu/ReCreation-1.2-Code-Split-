@@ -196,11 +196,22 @@ class TheReCreationAPITester:
         if not hasattr(self, 'ship_id'):
             return self.log_test("Move Ship", False, "No ship available for movement")
         
+        # Get current ship position first
+        success, status, ships_data = self.make_request('GET', 'game/ships')
+        if not success or not ships_data:
+            return self.log_test("Move Ship", False, "Could not get ship position")
+        
+        ship = ships_data[0]  # Get first ship
+        current_x, current_y = ship['position']['x'], ship['position']['y']
+        
+        # Move to adjacent position (within speed limit)
+        target_x = min(46, current_x + 1)  # Move 1 position right, stay within bounds
+        
         success, status, data = self.make_request(
             'POST', 'game/move',
             {
                 "ship_id": self.ship_id,
-                "target_position": {"x": 11, "y": 10}
+                "target_position": {"x": target_x, "y": current_y}
             },
             expected_status=200
         )
