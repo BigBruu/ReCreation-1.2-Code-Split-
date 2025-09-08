@@ -217,7 +217,7 @@ class TheReCreationAPITester:
         )
         
         if success:
-            return self.log_test("Move Ship", True, f"Ship moved to (11,10)")
+            return self.log_test("Move Ship", True, f"Ship moved to ({target_x},{current_y})")
         else:
             return self.log_test("Move Ship", False, f"Status: {status}, Data: {data}")
 
