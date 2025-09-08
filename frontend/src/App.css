@@ -1,34 +1,249 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* TheReCreation Game Styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Game Field Grid */
+.grid-cols-47 {
+  grid-template-columns: repeat(47, minmax(0, 1fr));
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
 }
 
-.App-link {
-    color: #61dafb;
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-600 rounded;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-500;
+}
+
+/* Game field cells */
+.game-field-cell {
+  @apply w-3 h-3 border border-gray-700 cursor-pointer transition-colors;
+}
+
+.game-field-cell:hover {
+  @apply bg-gray-700;
+}
+
+.game-field-cell.has-colony {
+  @apply bg-green-800;
+}
+
+.game-field-cell.has-ships {
+  @apply bg-blue-800;
+}
+
+.game-field-cell.has-both {
+  @apply bg-yellow-800;
+}
+
+.game-field-cell.selected {
+  @apply ring-2 ring-white;
+}
+
+/* Animation for updates */
+@keyframes pulse-update {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.update-pulse {
+  animation: pulse-update 1s ease-in-out;
+}
+
+/* Resource indicators */
+.resource-food { @apply text-green-400; }
+.resource-metal { @apply text-gray-400; }
+.resource-silicon { @apply text-blue-400; }
+.resource-hydrogen { @apply text-purple-400; }
+
+/* Ship type colors */
+.ship-scout { @apply bg-cyan-900 border-cyan-600; }
+.ship-fighter { @apply bg-red-900 border-red-600; }
+.ship-colonizer { @apply bg-orange-900 border-orange-600; }
+
+/* Modal backdrop */
+.modal-backdrop {
+  @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+}
+
+/* Button variants */
+.btn-primary {
+  @apply bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded font-medium transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded font-medium transition-colors;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 px-4 py-2 rounded font-medium transition-colors;
+}
+
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 px-4 py-2 rounded font-medium transition-colors;
+}
+
+/* Game layout */
+.game-layout {
+  @apply min-h-screen bg-black text-white;
+}
+
+.game-header {
+  @apply bg-gray-900 border-b border-gray-700 p-4;
+}
+
+.game-sidebar {
+  @apply w-80 bg-gray-900 border-r border-gray-700 p-4 h-screen overflow-y-auto;
+}
+
+.game-main {
+  @apply flex-1 p-4;
+}
+
+/* Card styles */
+.game-card {
+  @apply bg-gray-800 p-3 rounded border border-gray-700;
+}
+
+.colony-card {
+  @apply bg-green-900 border-green-600;
+}
+
+.ship-card {
+  @apply bg-blue-900 border-blue-600;
+}
+
+/* Tab navigation */
+.tab-nav {
+  @apply flex space-x-2 mb-4;
+}
+
+.tab-button {
+  @apply px-3 py-1 rounded text-sm capitalize transition-colors;
+}
+
+.tab-button.active {
+  @apply bg-blue-600 text-white;
+}
+
+.tab-button.inactive {
+  @apply bg-gray-700 hover:bg-gray-600 text-gray-300;
+}
+
+/* Status indicators */
+.status-online { @apply text-green-400; }
+.status-offline { @apply text-red-400; }
+.status-idle { @apply text-yellow-400; }
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .game-sidebar {
+    @apply w-64;
+  }
+  
+  .grid-cols-47 {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-sidebar {
+    @apply w-full h-auto;
+  }
+  
+  .game-layout {
+    @apply flex-col;
+  }
+  
+  .grid-cols-47 {
+    grid-template-columns: repeat(47, 8px);
+  }
+  
+  .game-field-cell {
+    @apply w-2 h-2;
+  }
+}
+
+/* Loading animations */
+@keyframes loading-dots {
+  0%, 20% { opacity: 0; }
+  40% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.loading-dots span {
+  animation: loading-dots 1.4s infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+/* Tooltip styles */
+.tooltip {
+  @apply absolute z-10 bg-gray-900 text-white text-xs p-2 rounded border border-gray-600 pointer-events-none opacity-0 transition-opacity;
+}
+
+.tooltip.show {
+  @apply opacity-100;
+}
+
+/* Game-specific animations */
+@keyframes ship-move {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.ship-moving {
+  animation: ship-move 0.5s ease-in-out;
+}
+
+@keyframes colony-created {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.colony-creating {
+  animation: colony-created 0.8s ease-out;
+}
+
+/* Dark theme overrides */
+body {
+  @apply bg-black text-white;
+}
+
+input, textarea, select {
+  @apply bg-gray-800 border-gray-600 text-white;
+}
+
+input:focus, textarea:focus, select:focus {
+  @apply border-blue-400 outline-none ring-1 ring-blue-400;
+}
+
+/* Print styles */
+@media print {
+  .game-layout {
+    @apply bg-white text-black;
+  }
+  
+  .game-sidebar {
+    @apply hidden;
+  }
 }
