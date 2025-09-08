@@ -159,6 +159,12 @@ class TheReCreationAPITester:
         if not hasattr(self, 'colony_id'):
             return self.log_test("Create Ship", False, "No colony available for ship creation")
         
+        # Process a few ticks to generate resources
+        print("   Processing ticks to generate resources...")
+        for i in range(3):
+            self.make_request('POST', 'game/tick', {})
+            time.sleep(0.5)
+        
         success, status, data = self.make_request(
             'POST', 'game/ship',
             {
