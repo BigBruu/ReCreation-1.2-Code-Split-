@@ -127,10 +127,13 @@ class TheReCreationAPITester:
 
     def test_create_colony(self):
         """Test creating a colony"""
+        import random
+        # Use random position to avoid conflicts
+        x, y = random.randint(0, 46), random.randint(0, 46)
         success, status, data = self.make_request(
             'POST', 'game/colony',
             {
-                "position": {"x": 10, "y": 10},
+                "position": {"x": x, "y": y},
                 "name": "Test Colony"
             },
             expected_status=200
