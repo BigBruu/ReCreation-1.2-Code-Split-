@@ -141,7 +141,7 @@ class TheReCreationAPITester:
         
         if success and 'id' in data:
             self.colony_id = data['id']
-            return self.log_test("Create Colony", True, f"Colony created at (10,10)")
+            return self.log_test("Create Colony", True, f"Colony created at ({x},{y})")
         else:
             return self.log_test("Create Colony", False, f"Status: {status}, Data: {data}")
 
