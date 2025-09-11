@@ -695,6 +695,13 @@ logger = logging.getLogger(__name__)
 async def startup_event():
     await init_game_state()
     logger.info("TheCreation Authentic Game Engine started!")
+    
+    # Force universe generation if no planets exist
+    planet_count = await db.planets.count_documents({})
+    if planet_count == 0:
+        logger.info("Generating universe with planets...")
+        await generate_universe()
+        logger.info(f"Generated {await db.planets.count_documents({})} planets")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
