@@ -913,7 +913,7 @@ async def get_user_planets(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/game/ship-design", response_model=ShipDesign)
 async def create_ship_design(design_data: CreateShipDesign, current_user: User = Depends(get_current_user)):
-    """Create a new ship design (Prototyp)"""
+    """Create a new ship design (Prototyp) with mining/colony units"""
     # Validate components exist and levels are valid
     if design_data.drive_type not in COMPONENT_LEVELS["drives"]:
         raise HTTPException(status_code=400, detail="Invalid drive type")
@@ -925,7 +925,7 @@ async def create_ship_design(design_data: CreateShipDesign, current_user: User =
     # Calculate ship statistics
     calculated_stats = calculate_ship_stats(design_data)
     
-    # Create design
+    # Create design with mining and colony units
     design = ShipDesign(
         user_id=current_user.id,
         name=design_data.name,
@@ -947,6 +947,8 @@ async def create_ship_design(design_data: CreateShipDesign, current_user: User =
             level=design_data.weapon_level,
             quantity=design_data.weapon_quantity
         ),
+        mining_units=design_data.mining_units or 0,
+        colony_units=design_data.colony_units or 0,
         calculated_stats=calculated_stats
     )
     
