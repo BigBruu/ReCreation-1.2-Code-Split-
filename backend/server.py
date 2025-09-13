@@ -89,6 +89,12 @@ COMPONENT_LEVELS = {
         "konventionell": {"levels": [1, 2, 3, 4, 5], "attack_base": 60, "weight": 50},
         "emp": {"levels": [1, 2, 3, 4, 5, 6], "attack_base": 25, "weight": 150},
         "plasma": {"levels": [1, 2, 3, 4, 5, 6], "attack_base": 50, "weight": 250}
+    },
+    "mining": {
+        "abbaueinheit": {"levels": [1, 2, 3, 4, 5], "mining_base": 100, "weight": 2000}
+    },
+    "special": {
+        "kolonieeinheit": {"levels": [1], "weight": 5000}
     }
 }
 
