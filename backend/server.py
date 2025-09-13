@@ -658,11 +658,11 @@ async def get_all_users(credentials: HTTPAuthorizationCredentials = Depends(secu
             "id": user["id"],
             "username": user["username"],
             "email": user["email"],
-            "points": user["points"],
+            "points": user.get("points", 0),
             "planets": planet_count,
             "fleets": fleet_count,
             "created_at": user["created_at"],
-            "spaceport_position": user["spaceport_position"]
+            "spaceport_position": user.get("spaceport_position", {"x": -1, "y": -1})
         })
     
     return user_list
