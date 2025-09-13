@@ -748,8 +748,131 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
   };
 
   return (
-    <div className="ship-design-calculator">
-      {/* Component UI would go here */}
+    <div className="modal-backdrop">
+      <div className="ship-calculator">
+        <div className="calculator-header">
+          <h3>Rechner - Prototypen entwerfen</h3>
+          <button onClick={onClose} className="close-btn">×</button>
+        </div>
+
+        <div className="calculator-content">
+          <div className="design-inputs">
+            <div className="input-group">
+              <label>Prototyp Name:</label>
+              <input
+                type="text"
+                value={design.name}
+                onChange={(e) => setDesign({...design, name: e.target.value})}
+                placeholder="z.B. Miner Mk1"
+              />
+            </div>
+
+            <div className="component-section">
+              <h4>Antrieb:</h4>
+              <select value={design.drive_type} onChange={(e) => setDesign({...design, drive_type: e.target.value})}>
+                {componentLevels?.drives && Object.keys(componentLevels.drives).map(type => (
+                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                ))}
+              </select>
+              <span>(L{design.drive_level})</span>
+              <input type="number" min="1" max="7" value={design.drive_level} 
+                     onChange={(e) => setDesign({...design, drive_level: parseInt(e.target.value)})} />
+              <span>Anzahl:</span>
+              <input type="number" min="1" value={design.drive_quantity}
+                     onChange={(e) => setDesign({...design, drive_quantity: parseInt(e.target.value)})} />
+            </div>
+
+            <div className="component-section">
+              <h4>Schild:</h4>
+              <select value={design.shield_type} onChange={(e) => setDesign({...design, shield_type: e.target.value})}>
+                {componentLevels?.shields && Object.keys(componentLevels.shields).map(type => (
+                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                ))}
+              </select>
+              <span>(L{design.shield_level})</span>
+              <input type="number" min="1" max="6" value={design.shield_level}
+                     onChange={(e) => setDesign({...design, shield_level: parseInt(e.target.value)})} />
+              <span>Anzahl:</span>
+              <input type="number" min="1" value={design.shield_quantity}
+                     onChange={(e) => setDesign({...design, shield_quantity: parseInt(e.target.value)})} />
+            </div>
+
+            <div className="component-section">
+              <h4>Waffe:</h4>
+              <select value={design.weapon_type} onChange={(e) => setDesign({...design, weapon_type: e.target.value})}>
+                {componentLevels?.weapons && Object.keys(componentLevels.weapons).map(type => (
+                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
+                ))}
+              </select>
+              <span>(L{design.weapon_level})</span>
+              <input type="number" min="1" max="6" value={design.weapon_level}
+                     onChange={(e) => setDesign({...design, weapon_level: parseInt(e.target.value)})} />
+              <span>Anzahl:</span>
+              <input type="number" min="1" value={design.weapon_quantity}
+                     onChange={(e) => setDesign({...design, weapon_quantity: parseInt(e.target.value)})} />
+            </div>
+
+            <div className="component-section">
+              <h4>⛏️ Abbaueinheiten:</h4>
+              <span>Anzahl:</span>
+              <input 
+                type="number" 
+                min="0" 
+                max="100" 
+                value={design.mining_units}
+                onChange={(e) => setDesign({...design, mining_units: parseInt(e.target.value)})} 
+              />
+              <span className="text-xs text-gray-400">
+                (100 Ressourcen/Tick pro Einheit)
+              </span>
+            </div>
+
+            <div className="component-section">
+              <h4>🏭 Kolonieeinheiten:</h4>
+              <span>Anzahl:</span>
+              <input 
+                type="number" 
+                min="0" 
+                max="10" 
+                value={design.colony_units}
+                onChange={(e) => setDesign({...design, colony_units: parseInt(e.target.value)})} 
+              />
+              <span className="text-xs text-gray-400">
+                (Für Planetenkolonisierung)
+              </span>
+            </div>
+          </div>
+
+          <div className="calculated-stats">
+            <h4>Berechnete Werte:</h4>
+            <table>
+              <tbody>
+                <tr><td>Beschleunigung:</td><td>{calculatedStats.speed}</td></tr>
+                <tr><td>Kampfwert:</td><td>{calculatedStats.combat_value}</td></tr>
+                <tr><td>Geschwindigkeit:</td><td>{calculatedStats.speed} pc/tick</td></tr>
+                <tr><td>Abbaukapazität:</td><td className="resource-metal">{calculatedStats.mining_capacity}/tick</td></tr>
+                <tr><td>Gewicht:</td><td>{calculatedStats.total_weight}</td></tr>
+                <tr><td>Bauzeit:</td><td>{calculatedStats.build_time_ticks} Ticks</td></tr>
+              </tbody>
+            </table>
+
+            <h4>Baukosten:</h4>
+            <table>
+              <tbody>
+                <tr><td>Nahrung:</td><td className="resource-food">{calculatedStats.build_cost.food.toLocaleString()}</td></tr>
+                <tr><td>Metall:</td><td className="resource-metal">{calculatedStats.build_cost.metal.toLocaleString()}</td></tr>
+                <tr><td>Silizium:</td><td className="resource-silicon">{calculatedStats.build_cost.silicon.toLocaleString()}</td></tr>
+                <tr><td>Wasserstoff:</td><td className="resource-hydrogen">{calculatedStats.build_cost.hydrogen.toLocaleString()}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="calculator-actions">
+          <button onClick={handleSave} className="btn-primary">Prototyp speichern</button>
+          <button onClick={onClose} className="btn-secondary">Abbrechen</button>
+        </div>
+      </div>
     </div>
   );
 };
