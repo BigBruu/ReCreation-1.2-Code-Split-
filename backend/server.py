@@ -347,20 +347,26 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     }
 
 async def generate_universe():
-    """Generate planets across the 47x47 universe"""
+    """Generate planets across the universe"""
     existing_planets = await db.planets.count_documents({})
     if existing_planets > 0:
         return  # Universe already generated
+    
+    config = await get_game_config()
+    universe_size = config.universe_size
+    min_resources = config.min_planet_resources
+    max_resources = config.max_planet_resources
     
     planets_to_create = []
     planet_names = ["Kepler", "Proxima", "Gliese", "Wolf", "Trappist", "Ross", "Luyten", "Kapteyn", 
                    "Barnard", "Vega", "Altair", "Sirius", "Rigel", "Betelgeuse", "Antares",
                    "Anno1602", "Tanne", "Übern", "Yacu", "Fräse", "Lusankya", "Manticore"]
     
-    # Generate 150-200 planets randomly distributed
-    for i in range(180):
-        x = random.randint(0, UNIVERSE_SIZE - 1)
-        y = random.randint(0, UNIVERSE_SIZE - 1)
+    # Generate planets based on universe size
+    planet_count = int((universe_size * universe_size) * 0.08)  # ~8% of fields have planets
+    for i in range(planet_count):
+        x = random.randint(0, universe_size - 1)
+        y = random.randint(0, universe_size - 1)
         
         # Skip if position already has a planet
         if any(p["position"]["x"] == x and p["position"]["y"] == y for p in planets_to_create):
@@ -369,16 +375,16 @@ async def generate_universe():
         planet_type = random.choice(list(PLANET_TYPES.keys()))
         base_resources = PLANET_TYPES[planet_type]["base_resources"].copy()
         
-        # Add some variation to resources (±30%)
+        # Scale resources based on config
+        resource_multiplier = random.uniform(min_resources / 50000000, max_resources / 50000000)
         for resource in base_resources:
-            variation = random.uniform(0.7, 1.3)
-            base_resources[resource] = int(base_resources[resource] * variation)
+            base_resources[resource] = int(base_resources[resource] * resource_multiplier)
         
         planet = {
             "id": str(uuid.uuid4()),
             "position": {"x": x, "y": y},
             "planet_type": planet_type,
-            "name": f"{random.choice(planet_names)}{random.randint(100, 9999)}",
+            "name": f"{random.choice(planet_names)}{random.randint(1000, 9999)}",
             "resources": base_resources,
             "owner_id": None,
             "owner_username": None,
