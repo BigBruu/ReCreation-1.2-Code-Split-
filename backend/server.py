@@ -173,6 +173,53 @@ class GameState(BaseModel):
     game_started: bool = False
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
+# --- ADMIN MODELS ---
+class GameConfig(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    max_players: int = 20
+    universe_size: int = 47
+    tick_duration: int = 60
+    min_planet_resources: int = 10000000
+    max_planet_resources: int = 100000000
+    colony_production_per_tick: int = 5
+    noob_protection_hours: int = 48
+    admin_password: str = "admin2025"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class InviteCode(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    code: str
+    created_by_admin: bool = True
+    used_by_user_id: Optional[str] = None
+    used_by_username: Optional[str] = None
+    used_at: Optional[datetime] = None
+    max_uses: int = 1
+    current_uses: int = 0
+    expires_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AdminLogin(BaseModel):
+    password: str
+
+class CreateInviteCode(BaseModel):
+    max_uses: int = 1
+    expires_in_hours: Optional[int] = None
+
+class UpdateGameConfig(BaseModel):
+    max_players: Optional[int] = None
+    universe_size: Optional[int] = None
+    tick_duration: Optional[int] = None
+    min_planet_resources: Optional[int] = None
+    max_planet_resources: Optional[int] = None
+    colony_production_per_tick: Optional[int] = None
+    noob_protection_hours: Optional[int] = None
+
+class UserCreateWithInvite(BaseModel):
+    username: str
+    email: str
+    password: str
+    invite_code: str
+
 # --- REQUEST MODELS ---
 class ObservatoryView(BaseModel):
     center_x: int
