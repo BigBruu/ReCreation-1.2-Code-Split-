@@ -850,7 +850,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
                 <tr><td>Beschleunigung:</td><td>{calculatedStats.speed}</td></tr>
                 <tr><td>Kampfwert:</td><td>{calculatedStats.combat_value}</td></tr>
                 <tr><td>Geschwindigkeit:</td><td>{calculatedStats.speed} pc/tick</td></tr>
-                <tr><td>Abbaukapazität:</td><td className="resource-metal">{calculatedStats.mining_capacity}/tick</td></tr>
+                <tr><td>Abbaukapazität:</td><td className="resource-metal">{calculatedStats.mining_capacity} Ressourcen/Tick</td></tr>
                 <tr><td>Gewicht:</td><td>{calculatedStats.total_weight}</td></tr>
                 <tr><td>Bauzeit:</td><td>{calculatedStats.build_time_ticks} Ticks</td></tr>
               </tbody>
