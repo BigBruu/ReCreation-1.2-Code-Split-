@@ -81,6 +81,9 @@ const AuthProvider = ({ children }) => {
   const register = async (username, email, password, inviteCode) => {
     setLoading(true);
     try {
+      // Clear any existing admin status
+      localStorage.removeItem('isAdmin');
+      
       const response = await axios.post(`${API}/register`, { 
         username, 
         email, 
@@ -90,6 +93,7 @@ const AuthProvider = ({ children }) => {
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
       setToken(access_token);
+      setIsAdmin(false); // Explicitly set to false for new users
       return true;
     } catch (error) {
       throw new Error(error.response?.data?.detail || 'Registration failed');
