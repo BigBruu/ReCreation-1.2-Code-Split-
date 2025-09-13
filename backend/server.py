@@ -273,6 +273,34 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="User not found")
     return User(**user)
 
+# --- ADMIN FUNCTIONS ---
+async def init_game_config():
+    """Initialize game configuration"""
+    existing_config = await db.game_config.find_one()
+    if not existing_config:
+        config = GameConfig()
+        await db.game_config.insert_one(config.dict())
+        return config
+    return GameConfig(**existing_config)
+
+async def get_game_config():
+    """Get current game configuration"""
+    config = await db.game_config.find_one()
+    if not config:
+        return await init_game_config()
+    return GameConfig(**config)
+
+def generate_invite_code():
+    """Generate a random invite code"""
+    import string
+    import secrets
+    return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+
+async def verify_admin_access(password: str):
+    """Verify admin password"""
+    config = await get_game_config()
+    return password == config.admin_password
+
 # --- AUTHENTIC GAME FUNCTIONS ---
 def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     """Calculate authentic ship statistics like in the original game"""
