@@ -823,7 +823,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
                 onChange={(e) => setDesign({...design, mining_units: parseInt(e.target.value)})} 
               />
               <span className="text-xs text-gray-400">
-                (100 Ressourcen/Tick pro Einheit)
+                (Summe aller Schiffe = Abbaukapazität/Tick)
               </span>
             </div>
 
