@@ -311,7 +311,7 @@ async def verify_admin_access(password: str):
 
 # --- AUTHENTIC GAME FUNCTIONS ---
 def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
-    """Calculate authentic ship statistics like in the original game"""
+    """Calculate authentic ship statistics including mining units"""
     # Get component data
     drive_data = COMPONENT_LEVELS["drives"][design.drive_type]
     shield_data = COMPONENT_LEVELS["shields"][design.shield_type]
@@ -321,7 +321,19 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     drive_weight = drive_data["weight"] * design.drive_quantity
     shield_weight = shield_data["weight"] * design.shield_quantity
     weapon_weight = weapon_data["weight"] * design.weapon_quantity
-    total_weight = drive_weight + shield_weight + weapon_weight
+    mining_weight = 0
+    colony_weight = 0
+    
+    # Add mining and colony unit weights
+    if design.mining_units > 0:
+        mining_data = COMPONENT_LEVELS["mining"]["abbaueinheit"]
+        mining_weight = mining_data["weight"] * design.mining_units
+    
+    if design.colony_units > 0:
+        colony_data = COMPONENT_LEVELS["special"]["kolonieeinheit"]
+        colony_weight = colony_data["weight"] * design.colony_units
+    
+    total_weight = drive_weight + shield_weight + weapon_weight + mining_weight + colony_weight
     
     # Calculate speed (pc per tick)
     base_speed = drive_data["speed_base"] * design.drive_level * design.drive_quantity
@@ -332,18 +344,29 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     defense_power = shield_data["defense_base"] * design.shield_level * design.shield_quantity
     combat_value = attack_power + defense_power
     
+    # Calculate mining capacity per tick
+    mining_capacity = 0
+    if design.mining_units > 0:
+        mining_data = COMPONENT_LEVELS["mining"]["abbaueinheit"]
+        mining_capacity = mining_data["mining_base"] * design.mining_units
+    
     # Calculate build costs (authentic formulas)
-    base_food_cost = 0
-    base_metal_cost = (drive_weight + weapon_weight) * design.drive_level * 10
+    base_food_cost = colony_weight * 4 if design.colony_units > 0 else 0  # Colony units need food
+    base_metal_cost = (drive_weight + weapon_weight + mining_weight) * design.drive_level * 10
     base_silicon_cost = (shield_weight + weapon_weight) * design.shield_level * 5
     base_hydrogen_cost = weapon_weight * design.weapon_level * 2
     
-    # Calculate build time (13 ticks as shown in screenshot)
+    # Calculate build time (based on complexity)
     build_time_ticks = max(1, total_weight // 100) + design.drive_level + design.shield_level + design.weapon_level
+    if design.mining_units > 0:
+        build_time_ticks += design.mining_units * 2
+    if design.colony_units > 0:
+        build_time_ticks += design.colony_units * 5
     
     return {
         "speed": speed,
         "combat_value": combat_value,
+        "mining_capacity": mining_capacity,
         "total_weight": total_weight,
         "build_cost": {
             "food": base_food_cost,
