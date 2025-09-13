@@ -908,6 +908,7 @@ const ProtectedRoute = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
+  // Admin users should stay in admin panel
   if (isAdmin) {
     return <Navigate to="/admin" replace />;
   }
@@ -918,8 +919,12 @@ const ProtectedRoute = ({ children }) => {
 const AdminRoute = ({ children }) => {
   const { token, isAdmin } = useAuth();
   
-  if (!token || !isAdmin) {
+  if (!token) {
     return <Navigate to="/login" replace />;
+  }
+  
+  if (!isAdmin) {
+    return <Navigate to="/game" replace />;
   }
   
   return children;
