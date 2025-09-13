@@ -458,16 +458,32 @@ async def process_tick():
 
 # --- AUTH ROUTES ---
 @api_router.post("/register", response_model=Token)
-async def register(user_data: UserCreate):
+async def register(user_data: UserCreateWithInvite):
+    # Verify invite code
+    invite_code = await db.invite_codes.find_one({"code": user_data.invite_code})
+    if not invite_code:
+        raise HTTPException(status_code=400, detail="Invalid invite code")
+    
+    invite = InviteCode(**invite_code)
+    
+    # Check if code is expired
+    if invite.expires_at and invite.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Invite code has expired")
+    
+    # Check if code has been used too many times
+    if invite.current_uses >= invite.max_uses:
+        raise HTTPException(status_code=400, detail="Invite code has been used up")
+    
     # Check if user exists
     existing_user = await db.users.find_one({"$or": [{"username": user_data.username}, {"email": user_data.email}]})
     if existing_user:
         raise HTTPException(status_code=400, detail="Username or email already exists")
     
     # Check max players
+    config = await get_game_config()
     player_count = await db.users.count_documents({})
-    if player_count >= MAX_PLAYERS:
-        raise HTTPException(status_code=400, detail=f"Maximum {MAX_PLAYERS} players reached")
+    if player_count >= config.max_players:
+        raise HTTPException(status_code=400, detail=f"Maximum {config.max_players} players reached")
     
     # Create user
     hashed_password = pwd_context.hash(user_data.password)
@@ -478,6 +494,17 @@ async def register(user_data: UserCreate):
     )
     
     await db.users.insert_one(user.dict())
+    
+    # Mark invite code as used
+    await db.invite_codes.update_one(
+        {"id": invite.id},
+        {"$set": {
+            "used_by_user_id": user.id,
+            "used_by_username": user.username,
+            "used_at": datetime.utcnow()
+        },
+        "$inc": {"current_uses": 1}}
+    )
     
     # Assign spaceport to user
     await assign_spaceport_to_user(user.id, user.username)
