@@ -907,25 +907,445 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
   );
 };
 
-// Game Interface (simplified for now)
+// Observatory Component (7x7 View)
+const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) => {
+  const renderField = (x, y) => {
+    const key = `${x},${y}`;
+    const fieldData = view[key] || { planet: null, fleets: [] };
+    const { planet, fleets } = fieldData;
+
+    let planetIcon = null;
+    if (planet) {
+      const planetClass = `planet-${planet.planet_type}`;
+      const isOwned = planet.owner_username;
+      planetIcon = (
+        <div className={`planet ${planetClass} ${isOwned ? 'owned' : ''}`}>
+          <div className="planet-name">{planet.name}</div>
+          {isOwned && <div className="planet-owner">{planet.owner_username}</div>}
+        </div>
+      );
+    }
+
+    const hasFleets = fleets.length > 0;
+
+    return (
+      <div
+        key={key}
+        className={`observatory-field ${planet ? 'has-planet' : 'empty'} ${hasFleets ? 'has-fleets' : ''}`}
+        onClick={() => onFieldClick(x, y, fieldData)}
+        title={`(${x},${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''}`}
+      >
+        <div className="field-coordinates">{x},{y}</div>
+        {planetIcon}
+        {hasFleets && (
+          <div className="fleet-indicator">
+            {fleets.map((fleet, i) => (
+              <div key={i} className="fleet-icon">🚀</div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const handleNavigation = (direction) => {
+    const newPos = { ...centerPosition };
+    switch (direction) {
+      case 'up': newPos.y = Math.max(3, newPos.y - 1); break;
+      case 'down': newPos.y = Math.min(43, newPos.y + 1); break;
+      case 'left': newPos.x = Math.max(3, newPos.x - 1); break;
+      case 'right': newPos.x = Math.min(43, newPos.x + 1); break;
+    }
+    onPositionChange(newPos);
+  };
+
+  return (
+    <div className="observatory-container">
+      <div className="observatory-header">
+        <h3>Observatorium</h3>
+        <div className="observatory-nav">
+          <button onClick={() => handleNavigation('up')}>↑</button>
+          <div>
+            <button onClick={() => handleNavigation('left')}>←</button>
+            <span className="coordinates">({centerPosition.x}, {centerPosition.y})</span>
+            <button onClick={() => handleNavigation('right')}>→</button>
+          </div>
+          <button onClick={() => handleNavigation('down')}>↓</button>
+        </div>
+      </div>
+      
+      <div className="observatory-grid">
+        {Array.from({ length: 7 }, (_, row) => {
+          const y = centerPosition.y - 3 + row; // -3 to +3
+          return (
+            <div key={row} className="observatory-row">
+              <div className="row-label">{y}</div>
+              {Array.from({ length: 7 }, (_, col) => {
+                const x = centerPosition.x - 3 + col;
+                if (x >= 0 && x < 47 && y >= 0 && y < 47) {
+                  return renderField(x, y);
+                }
+                return <div key={col} className="observatory-field empty"></div>;
+              })}
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="observatory-legend">
+        <div className="legend-item">
+          <div className="planet planet-green"></div>
+          <span>Grüner Planet</span>
+        </div>
+        <div className="legend-item">
+          <div className="planet planet-blue"></div>
+          <span>Blauer Planet</span>
+        </div>
+        <div className="legend-item">
+          <div className="planet planet-brown"></div>
+          <span>Brauner Planet</span>
+        </div>
+        <div className="legend-item">
+          <div className="planet planet-orange"></div>
+          <span>Oranger Planet</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Game Interface (FULL VERSION)
 const GameInterface = () => {
   const { user, logout } = useAuth();
-  
+  const { toast } = useToast();
+  const [gameState, setGameState] = useState(null);
+  const [observatoryView, setObservatoryView] = useState({});
+  const [centerPosition, setCenterPosition] = useState({ x: 23, y: 23 });
+  const [userPlanets, setUserPlanets] = useState([]);
+  const [userFleets, setUserFleets] = useState([]);
+  const [shipDesigns, setShipDesigns] = useState([]);
+  const [componentLevels, setComponentLevels] = useState(null);
+  const [rankings, setRankings] = useState([]);
+  const [activeTab, setActiveTab] = useState('observatorium');
+  const [selectedField, setSelectedField] = useState(null);
+  const [showShipCalculator, setShowShipCalculator] = useState(false);
+
+  useEffect(() => {
+    fetchGameData();
+    const interval = setInterval(fetchGameData, 15000); // Update every 15 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (user?.spaceport_position && user.spaceport_position.x !== -1) {
+      setCenterPosition(user.spaceport_position);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (centerPosition.x !== -1) {
+      fetchObservatoryView();
+    }
+  }, [centerPosition]);
+
+  const fetchGameData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [gameStateRes, planetsRes, fleetsRes, designsRes, componentRes, rankingsRes] = await Promise.all([
+        axios.get(`${API}/game/state`, { headers }),
+        axios.get(`${API}/game/planets`, { headers }),
+        axios.get(`${API}/game/fleets`, { headers }),
+        axios.get(`${API}/game/ship-designs`, { headers }),
+        axios.get(`${API}/game/component-levels`, { headers }),
+        axios.get(`${API}/game/rankings`, { headers })
+      ]);
+
+      setGameState(gameStateRes.data);
+      setUserPlanets(planetsRes.data);
+      setUserFleets(fleetsRes.data);
+      setShipDesigns(designsRes.data);
+      setComponentLevels(componentRes.data);
+      setRankings(rankingsRes.data);
+    } catch (error) {
+      console.error('Failed to fetch game data:', error);
+    }
+  };
+
+  const fetchObservatoryView = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/game/observatory`, {
+        center_x: centerPosition.x,
+        center_y: centerPosition.y
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setObservatoryView(response.data.view);
+    } catch (error) {
+      console.error('Failed to fetch observatory view:', error);
+    }
+  };
+
+  const handleFieldClick = (x, y, fieldData) => {
+    setSelectedField({ x, y, ...fieldData });
+  };
+
+  const handlePositionChange = (newPosition) => {
+    setCenterPosition(newPosition);
+  };
+
+  const handleSaveShipDesign = async (designData) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/game/ship-design`, designData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: "Erfolg", description: "Prototyp erstellt!" });
+      setShowShipCalculator(false);
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Fehler beim Erstellen des Prototyps',
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const processTick = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/game/tick`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({ title: "Erfolg", description: "Tick verarbeitet!" });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: 'Fehler beim Verarbeiten des Ticks',
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const formatNextTick = () => {
+    if (!gameState?.next_tick_time) return 'Unbekannt';
+    const nextTick = new Date(gameState.next_tick_time);
+    const now = new Date();
+    const diff = Math.max(0, Math.floor((nextTick - now) / 1000));
+    const minutes = Math.floor(diff / 60);
+    const seconds = diff % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
-    <div className="min-h-screen bg-black text-white p-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-blue-400 mb-4">TheReCreation</h1>
-        <p className="text-gray-400 mb-4">Willkommen, {user?.username}!</p>
-        <p className="text-sm text-gray-500 mb-8">
-          Vollständige Spielschnittstelle wird nach Admin-System implementiert
-        </p>
-        <button 
-          onClick={logout}
-          className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded"
-        >
-          Logout
-        </button>
+    <div className="game-layout starfield">
+      {/* Authentic Header */}
+      <div className="game-header authentic-header">
+        <div className="header-left">
+          <div className="game-info">
+            <div>Uhrzeit: {new Date().toLocaleString('de-DE')}</div>
+            <div>nexttick: {gameState?.next_tick_time ? new Date(gameState.next_tick_time).toLocaleString('de-DE') : 'Lade...'}</div>
+            <div>Tickdauer: {formatNextTick()}</div>
+          </div>
+        </div>
+        
+        <div className="header-center">
+          <h1 className="game-title">TheReCreation</h1>
+          <div className="game-subtitle">Runde 10 • Tick: {gameState?.current_tick || 0}</div>
+        </div>
+
+        <div className="header-right">
+          <div className="user-resources">
+            {userPlanets.length > 0 && (
+              <div className="resource-display">
+                <div className="resource-item">
+                  <span className="resource-label">Nahrung</span>
+                  <span className="resource-value resource-food">
+                    {userPlanets.reduce((sum, p) => sum + p.resources.food, 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="resource-item">
+                  <span className="resource-label">Metall</span>
+                  <span className="resource-value resource-metal">
+                    {userPlanets.reduce((sum, p) => sum + p.resources.metal, 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="resource-item">
+                  <span className="resource-label">Silizium</span>
+                  <span className="resource-value resource-silicon">
+                    {userPlanets.reduce((sum, p) => sum + p.resources.silicon, 0).toLocaleString()}
+                  </span>
+                </div>
+                <div className="resource-item">
+                  <span className="resource-label">Wasserstoff</span>
+                  <span className="resource-value resource-hydrogen">
+                    {userPlanets.reduce((sum, p) => sum + p.resources.hydrogen, 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          <button onClick={logout} className="logout-btn">Logout</button>
+        </div>
       </div>
+
+      <div className="game-main-layout">
+        {/* Sidebar Navigation */}
+        <div className="game-sidebar authentic-sidebar">
+          <div className="sidebar-nav">
+            {[
+              { id: 'observatorium', label: 'Observatorium' },
+              { id: 'einrichtungen', label: 'Einrichtungen' },
+              { id: 'technologie', label: 'Technologie' },
+              { id: 'werft', label: 'Werft' },
+              { id: 'handelszentrum', label: 'Handelszentrum' },
+              { id: 'allianzen', label: 'Allianzen' }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`sidebar-tab ${activeTab === tab.id ? 'active' : ''}`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="sidebar-secondary">
+            <button className="sidebar-link">Startseite</button>
+            <button className="sidebar-link">Forum</button>
+            <button className="sidebar-link">Rangliste</button>
+            <button className="sidebar-link">Hall of Fame</button>
+            <button className="sidebar-link">Statistiken</button>
+            <button className="sidebar-link">Release Info</button>
+            <button className="sidebar-link">Hilfe</button>
+          </div>
+
+          <div className="sidebar-actions">
+            <button onClick={processTick} className="btn-primary">Tick verarbeiten</button>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="game-content">
+          {activeTab === 'observatorium' && (
+            <Observatory
+              centerPosition={centerPosition}
+              onPositionChange={handlePositionChange}
+              view={observatoryView}
+              onFieldClick={handleFieldClick}
+            />
+          )}
+
+          {activeTab === 'werft' && (
+            <div className="werft-content">
+              <div className="werft-header">
+                <h3>Werft - Raumschiff-Prototypen</h3>
+                <button 
+                  onClick={() => setShowShipCalculator(true)}
+                  className="btn-primary"
+                >
+                  Rechner - Prototypen entwerfen
+                </button>
+              </div>
+
+              <div className="prototypes-list">
+                <h4>Ihre Prototypen ({shipDesigns.length})</h4>
+                {shipDesigns.map(design => (
+                  <div key={design.id} className="prototype-card">
+                    <h5>{design.name}</h5>
+                    <div className="prototype-stats">
+                      <div>Antrieb: {design.drive.component_name} (L{design.drive.level}) x{design.drive.quantity}</div>
+                      <div>Schild: {design.shield.component_name} (L{design.shield.level}) x{design.shield.quantity}</div>
+                      <div>Waffe: {design.weapon.component_name} (L{design.weapon.level}) x{design.weapon.quantity}</div>
+                      {design.mining_units > 0 && <div>⛏️ Abbaueinheiten: {design.mining_units}</div>}
+                      {design.colony_units > 0 && <div>🏭 Kolonieeinheiten: {design.colony_units}</div>}
+                      <div className="stats-row">
+                        <span>Geschwindigkeit: {design.calculated_stats.speed} pc/tick</span>
+                        <span>Kampfwert: {design.calculated_stats.combat_value}</span>
+                        {design.calculated_stats.mining_capacity > 0 && 
+                          <span>Abbau: {design.calculated_stats.mining_capacity}/tick</span>}
+                        <span>Bauzeit: {design.calculated_stats.build_time_ticks} Ticks</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'einrichtungen' && (
+            <div className="facilities-content">
+              <h3>Planeten & Einrichtungen</h3>
+              <div className="planets-list">
+                {userPlanets.map(planet => (
+                  <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
+                    <h4>{planet.name}</h4>
+                    <div className="planet-position">Position: ({planet.position.x}, {planet.position.y})</div>
+                    <div className="planet-resources">
+                      <div>🌾 Nahrung: {planet.resources.food.toLocaleString()}</div>
+                      <div>⚙️ Metall: {planet.resources.metal.toLocaleString()}</div>
+                      <div>💎 Silizium: {planet.resources.silicon.toLocaleString()}</div>
+                      <div>⚡ Wasserstoff: {planet.resources.hydrogen.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Field Info Panel */}
+        {SelectedField && (
+          <div className="field-info-panel">
+            <h4>Feld ({selectedField.x}, {selectedField.y})</h4>
+            {selectedField.planet ? (
+              <div className="planet-info">
+                <h5>{selectedField.planet.name}</h5>
+                <div>Typ: {selectedField.planet.planet_type}</div>
+                {selectedField.planet.owner_username && (
+                  <div>Besitzer: {selectedField.planet.owner_username}</div>
+                )}
+                <div className="planet-resources">
+                  <div>🌾 {selectedField.planet.resources.food.toLocaleString()}</div>
+                  <div>⚙️ {selectedField.planet.resources.metal.toLocaleString()}</div>
+                  <div>💎 {selectedField.planet.resources.silicon.toLocaleString()}</div>
+                  <div>⚡ {selectedField.planet.resources.hydrogen.toLocaleString()}</div>
+                </div>
+              </div>
+            ) : (
+              <div>Leerer Raum</div>
+            )}
+            
+            {selectedField.fleets?.length > 0 && (
+              <div className="fleets-info">
+                <h5>Flotten ({selectedField.fleets.length})</h5>
+                {selectedField.fleets.map((fleet, i) => (
+                  <div key={i} className="fleet-info">
+                    <div>{fleet.name}</div>
+                    <div>von {fleet.username}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <button onClick={() => setSelectedField(null)} className="close-panel">×</button>
+          </div>
+        )}
+      </div>
+
+      {/* Ship Calculator Modal */}
+      {showShipCalculator && (
+        <ShipDesignCalculator
+          onClose={() => setShowShipCalculator(false)}
+          onSave={handleSaveShipDesign}
+          componentLevels={componentLevels}
+        />
+      )}
     </div>
   );
 };
