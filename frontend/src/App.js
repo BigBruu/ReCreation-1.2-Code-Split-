@@ -22,14 +22,25 @@ const useAuth = () => {
 const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
-  const [isAdmin, setIsAdmin] = useState(localStorage.getItem('isAdmin') === 'true');
+  const [isAdmin, setIsAdmin] = useState(false); // Start with false, not from localStorage
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (token && !isAdmin) {
-      fetchUser();
+    // Only check localStorage for admin status if we have a token
+    if (token) {
+      const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
+      setIsAdmin(storedIsAdmin);
+      
+      if (!storedIsAdmin) {
+        // For normal users, fetch user data
+        fetchUser();
+      }
+    } else {
+      // No token, clear admin status
+      setIsAdmin(false);
+      localStorage.removeItem('isAdmin');
     }
-  }, [token, isAdmin]);
+  }, [token]);
 
   const fetchUser = async () => {
     try {
