@@ -462,7 +462,7 @@ async def init_game_state():
     return GameState(**existing_state)
 
 async def process_tick():
-    """Process authentic game tick"""
+    """Process authentic game tick - movement and mining only"""
     config = await get_game_config()
     
     # Update fleets in movement
@@ -480,6 +480,71 @@ async def process_tick():
                     "movement_end_time": None
                 }}
             )
+    
+    # Process mining operations for stationary fleets
+    stationary_fleets = await db.fleets.find({"movement_end_time": None}).to_list(1000)
+    for fleet_data in stationary_fleets:
+        fleet = Fleet(**fleet_data)
+        
+        # Check if fleet is on a planet
+        planet = await db.planets.find_one({
+            "position.x": fleet.position.x,
+            "position.y": fleet.position.y,
+            "owner_id": fleet.user_id  # Only mine from owned planets
+        })
+        
+        if planet:
+            planet_obj = Planet(**planet)
+            
+            # Calculate total mining capacity of this fleet
+            total_mining_capacity = 0
+            for ship_group in fleet.ships:
+                design = await db.ship_designs.find_one({"id": ship_group["design_id"]})
+                if design:
+                    design_obj = ShipDesign(**design)
+                    mining_capacity = design_obj.calculated_stats.get("mining_capacity", 0)
+                    total_mining_capacity += mining_capacity * ship_group["quantity"]
+            
+            if total_mining_capacity > 0:
+                # Mine resources proportionally
+                mining_efficiency = config.mining_efficiency
+                actual_mining = int(total_mining_capacity * mining_efficiency)
+                
+                # Distribute mining across resource types based on availability
+                total_resources = (planet_obj.resources.food + planet_obj.resources.metal + 
+                                 planet_obj.resources.silicon + planet_obj.resources.hydrogen)
+                
+                if total_resources > 0:
+                    # Calculate proportional mining
+                    food_ratio = planet_obj.resources.food / total_resources
+                    metal_ratio = planet_obj.resources.metal / total_resources
+                    silicon_ratio = planet_obj.resources.silicon / total_resources
+                    hydrogen_ratio = planet_obj.resources.hydrogen / total_resources
+                    
+                    food_mined = min(int(actual_mining * food_ratio), planet_obj.resources.food)
+                    metal_mined = min(int(actual_mining * metal_ratio), planet_obj.resources.metal)
+                    silicon_mined = min(int(actual_mining * silicon_ratio), planet_obj.resources.silicon)
+                    hydrogen_mined = min(int(actual_mining * hydrogen_ratio), planet_obj.resources.hydrogen)
+                    
+                    # Update planet resources (subtract mined)
+                    await db.planets.update_one(
+                        {"id": planet_obj.id},
+                        {"$inc": {
+                            "resources.food": -food_mined,
+                            "resources.metal": -metal_mined,
+                            "resources.silicon": -silicon_mined,
+                            "resources.hydrogen": -hydrogen_mined
+                        }}
+                    )
+                    
+                    # Add mined resources to user's total (for now, we could implement cargo ships later)
+                    # For simplicity, we'll add points to the user
+                    resources_value = food_mined + metal_mined + silicon_mined + hydrogen_mined
+                    if resources_value > 0:
+                        await db.users.update_one(
+                            {"id": fleet.user_id},
+                            {"$inc": {"points": resources_value // 1000}}  # 1 point per 1000 resources
+                        )
     
     # Update game state with configured tick duration
     next_tick_time = datetime.utcnow() + timedelta(seconds=config.tick_duration)
