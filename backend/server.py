@@ -424,11 +424,14 @@ async def init_game_state():
         game_state = GameState()
         await db.game_state.insert_one(game_state.dict())
         await generate_universe()  # Generate planets
+        await init_game_config()  # Initialize game config
         return game_state
     return GameState(**existing_state)
 
 async def process_tick():
     """Process authentic game tick"""
+    config = await get_game_config()
+    
     # Update fleets in movement
     fleets = await db.fleets.find({"movement_end_time": {"$lte": datetime.utcnow()}}).to_list(1000)
     for fleet_data in fleets:
@@ -445,8 +448,8 @@ async def process_tick():
                 }}
             )
     
-    # Update game state
-    next_tick_time = datetime.utcnow() + timedelta(seconds=TICK_DURATION)
+    # Update game state with configured tick duration
+    next_tick_time = datetime.utcnow() + timedelta(seconds=config.tick_duration)
     await db.game_state.update_one(
         {},
         {"$inc": {"current_tick": 1}, 
