@@ -538,6 +538,208 @@ async def login(user_data: UserLogin):
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
 
+# --- ADMIN ROUTES ---
+@api_router.post("/admin/login")
+async def admin_login(admin_data: AdminLogin):
+    """Admin login with password"""
+    if not await verify_admin_access(admin_data.password):
+        raise HTTPException(status_code=401, detail="Invalid admin password")
+    
+    # Create admin token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": "admin", "admin": True}, expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer", "admin": True}
+
+@api_router.get("/admin/config", response_model=GameConfig)
+async def get_admin_config(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get game configuration (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    return await get_game_config()
+
+@api_router.post("/admin/config")
+async def update_admin_config(config_update: UpdateGameConfig, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Update game configuration (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    update_data = {k: v for k, v in config_update.dict().items() if v is not None}
+    
+    await db.game_config.update_one({}, {"$set": update_data})
+    return {"message": "Configuration updated successfully"}
+
+@api_router.post("/admin/invite-codes", response_model=InviteCode)
+async def create_invite_code(invite_data: CreateInviteCode, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Create new invite code (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    code = generate_invite_code()
+    expires_at = None
+    if invite_data.expires_in_hours:
+        expires_at = datetime.utcnow() + timedelta(hours=invite_data.expires_in_hours)
+    
+    invite_code = InviteCode(
+        code=code,
+        max_uses=invite_data.max_uses,
+        expires_at=expires_at
+    )
+    
+    await db.invite_codes.insert_one(invite_code.dict())
+    return invite_code
+
+@api_router.get("/admin/invite-codes", response_model=List[InviteCode])
+async def get_invite_codes(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get all invite codes (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    codes = await db.invite_codes.find().sort("created_at", -1).to_list(100)
+    return [InviteCode(**code) for code in codes]
+
+@api_router.delete("/admin/invite-codes/{code_id}")
+async def delete_invite_code(code_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Delete invite code (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    result = await db.invite_codes.delete_one({"id": code_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Invite code not found")
+    
+    return {"message": "Invite code deleted successfully"}
+
+@api_router.get("/admin/users")
+async def get_all_users(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get all users (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    users = await db.users.find().sort("created_at", -1).to_list(100)
+    user_list = []
+    for user in users:
+        planet_count = await db.planets.count_documents({"owner_id": user["id"]})
+        fleet_count = await db.fleets.count_documents({"user_id": user["id"]})
+        user_list.append({
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "points": user["points"],
+            "planets": planet_count,
+            "fleets": fleet_count,
+            "created_at": user["created_at"],
+            "spaceport_position": user["spaceport_position"]
+        })
+    
+    return user_list
+
+@api_router.delete("/admin/users/{user_id}")
+async def delete_user(user_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Delete user (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Delete user's planets, fleets, ship designs
+    await db.planets.update_many({"owner_id": user_id}, {"$set": {"owner_id": None, "owner_username": None}})
+    await db.fleets.delete_many({"user_id": user_id})
+    await db.ship_designs.delete_many({"user_id": user_id})
+    
+    # Delete user
+    result = await db.users.delete_one({"id": user_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {"message": "User deleted successfully"}
+
+@api_router.post("/admin/reset-game")
+async def reset_game(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Reset entire game (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    # Delete all game data except admin config and invite codes
+    await db.users.delete_many({})
+    await db.planets.delete_many({})
+    await db.fleets.delete_many({})
+    await db.ship_designs.delete_many({})
+    await db.game_state.delete_many({})
+    
+    # Reinitialize game
+    await init_game_state()
+    
+    return {"message": "Game reset successfully"}
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get game statistics (admin only)"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    
+    config = await get_game_config()
+    user_count = await db.users.count_documents({})
+    planet_count = await db.planets.count_documents({})
+    occupied_planets = await db.planets.count_documents({"owner_id": {"$ne": None}})
+    fleet_count = await db.fleets.count_documents({})
+    invite_codes = await db.invite_codes.count_documents({})
+    
+    return {
+        "players": {"current": user_count, "max": config.max_players},
+        "planets": {"total": planet_count, "occupied": occupied_planets},
+        "fleets": fleet_count,
+        "invite_codes": invite_codes,
+        "universe_size": f"{config.universe_size}x{config.universe_size}",
+        "tick_duration": f"{config.tick_duration}s"
+    }
+
 # --- AUTHENTIC GAME ROUTES ---
 @api_router.get("/game/state")
 async def get_game_state():
