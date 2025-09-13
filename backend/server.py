@@ -190,6 +190,7 @@ class GameConfig(BaseModel):
     min_planet_resources: int = 10000000
     max_planet_resources: int = 100000000
     mining_efficiency: float = 1.0  # Multiplier for mining operations
+    colonization_time_hours: int = 24  # Time to colonize a planet
     noob_protection_hours: int = 48
     admin_password: str = "admin2025"
     created_at: datetime = Field(default_factory=datetime.utcnow)
