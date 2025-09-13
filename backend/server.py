@@ -221,6 +221,7 @@ class UpdateGameConfig(BaseModel):
     min_planet_resources: Optional[int] = None
     max_planet_resources: Optional[int] = None
     mining_efficiency: Optional[float] = None
+    colonization_time_hours: Optional[int] = None
     noob_protection_hours: Optional[int] = None
 
 class UserCreateWithInvite(BaseModel):
