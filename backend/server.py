@@ -1011,10 +1011,16 @@ async def startup_event():
     
     # Force universe generation if no planets exist
     planet_count = await db.planets.count_documents({})
+    logger.info(f"Found {planet_count} planets in database")
     if planet_count == 0:
         logger.info("Generating universe with planets...")
         await generate_universe()
-        logger.info(f"Generated {await db.planets.count_documents({})} planets")
+        final_count = await db.planets.count_documents({})
+        logger.info(f"Generated {final_count} planets")
+    
+    # Initialize game config
+    config = await init_game_config()
+    logger.info(f"Game config: {config.max_players} max players, {config.universe_size}x{config.universe_size} universe")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
