@@ -502,6 +502,17 @@ const AdminPanel = () => {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
                     />
                   </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Kolonisierungszeit (1-168h)</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="168"
+                      value={config.colonization_time_hours}
+                      onChange={(e) => setConfig({...config, colonization_time_hours: parseInt(e.target.value)})}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded"
+                    />
+                  </div>
                 </div>
                 <button
                   onClick={() => updateConfig(config)}
