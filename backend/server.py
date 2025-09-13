@@ -217,7 +217,7 @@ class UpdateGameConfig(BaseModel):
     tick_duration: Optional[int] = None
     min_planet_resources: Optional[int] = None
     max_planet_resources: Optional[int] = None
-    colony_production_per_tick: Optional[int] = None
+    mining_efficiency: Optional[float] = None
     noob_protection_hours: Optional[int] = None
 
 class UserCreateWithInvite(BaseModel):
