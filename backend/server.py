@@ -155,7 +155,9 @@ class ShipDesign(BaseModel):
     drive: ShipComponent
     shield: ShipComponent
     weapon: ShipComponent
-    calculated_stats: Dict[str, Any] = Field(default_factory=dict)  # speed, combat_value, build_cost, build_time
+    mining_units: int = 0
+    colony_units: int = 0
+    calculated_stats: Dict[str, Any] = Field(default_factory=dict)  # speed, combat_value, mining_capacity, build_cost, build_time
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class Fleet(BaseModel):
