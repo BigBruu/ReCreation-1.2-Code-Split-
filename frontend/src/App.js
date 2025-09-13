@@ -650,6 +650,110 @@ const AdminPanel = () => {
   );
 };
 
+// Ship Design Calculator (Rechner)
+const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
+  const [design, setDesign] = useState({
+    name: '',
+    drive_type: 'segel',
+    drive_level: 1,
+    drive_quantity: 88,
+    shield_type: 'quarz',
+    shield_level: 6,
+    shield_quantity: 110,
+    weapon_type: 'laser',
+    weapon_level: 1,
+    weapon_quantity: 10,
+    mining_units: 0,
+    colony_units: 0
+  });
+
+  const [calculatedStats, setCalculatedStats] = useState({
+    speed: 0,
+    combat_value: 0,
+    mining_capacity: 0,
+    total_weight: 0,
+    build_cost: { food: 0, metal: 0, silicon: 0, hydrogen: 0 },
+    build_time_ticks: 0
+  });
+
+  // Recalculate stats when design changes
+  useEffect(() => {
+    calculateStats();
+  }, [design, componentLevels]);
+
+  const calculateStats = () => {
+    if (!componentLevels?.drives || !componentLevels?.shields || !componentLevels?.weapons) return;
+
+    const driveData = componentLevels.drives[design.drive_type];
+    const shieldData = componentLevels.shields[design.shield_type];
+    const weaponData = componentLevels.weapons[design.weapon_type];
+
+    if (!driveData || !shieldData || !weaponData) return;
+
+    // Calculate weight
+    const driveWeight = driveData.weight * design.drive_quantity;
+    const shieldWeight = shieldData.weight * design.shield_quantity;
+    const weaponWeight = weaponData.weight * design.weapon_quantity;
+    const miningWeight = componentLevels.mining?.abbaueinheit ? 
+      componentLevels.mining.abbaueinheit.weight * design.mining_units : 0;
+    const colonyWeight = componentLevels.special?.kolonieeinheit ? 
+      componentLevels.special.kolonieeinheit.weight * design.colony_units : 0;
+    const totalWeight = driveWeight + shieldWeight + weaponWeight + miningWeight + colonyWeight;
+
+    // Calculate speed
+    const baseSpeed = driveData.speed_base * design.drive_level * design.drive_quantity;
+    const speed = Math.max(1, Math.floor(baseSpeed / Math.max(1, totalWeight / 100)));
+
+    // Calculate combat value
+    const attackPower = weaponData.attack_base * design.weapon_level * design.weapon_quantity;
+    const defensePower = shieldData.defense_base * design.shield_level * design.shield_quantity;
+    const combatValue = attackPower + defensePower;
+
+    // Calculate mining capacity
+    const miningCapacity = componentLevels.mining?.abbaueinheit ? 
+      componentLevels.mining.abbaueinheit.mining_base * design.mining_units : 0;
+
+    // Calculate build costs
+    const foodCost = colonyWeight * 4;
+    const metalCost = (driveWeight + weaponWeight + miningWeight) * design.drive_level * 10;
+    const siliconCost = (shieldWeight + weaponWeight) * design.shield_level * 5;
+    const hydrogenCost = weaponWeight * design.weapon_level * 2;
+
+    // Calculate build time
+    let buildTime = Math.max(1, Math.floor(totalWeight / 100)) + design.drive_level + design.shield_level + design.weapon_level;
+    if (design.mining_units > 0) buildTime += design.mining_units * 2;
+    if (design.colony_units > 0) buildTime += design.colony_units * 5;
+
+    setCalculatedStats({
+      speed,
+      combat_value: combatValue,
+      mining_capacity: miningCapacity,
+      total_weight: totalWeight,
+      build_cost: {
+        food: foodCost,
+        metal: metalCost,
+        silicon: siliconCost,
+        hydrogen: hydrogenCost
+      },
+      build_time_ticks: buildTime
+    });
+  };
+
+  const handleSave = () => {
+    if (!design.name.trim()) {
+      alert('Bitte geben Sie einen Namen für den Prototyp ein');
+      return;
+    }
+    onSave(design);
+  };
+
+  return (
+    <div className="ship-design-calculator">
+      {/* Component UI would go here */}
+    </div>
+  );
+};
+
 // Game Interface (simplified for now)
 const GameInterface = () => {
   const { user, logout } = useAuth();
