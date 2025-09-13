@@ -45,10 +45,14 @@ const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setLoading(true);
     try {
+      // Clear any existing admin status
+      localStorage.removeItem('isAdmin');
+      
       const response = await axios.post(`${API}/login`, { username, password });
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
       setToken(access_token);
+      setIsAdmin(false); // Explicitly set to false for normal users
       return true;
     } catch (error) {
       throw new Error(error.response?.data?.detail || 'Login failed');
