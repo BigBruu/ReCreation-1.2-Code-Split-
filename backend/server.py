@@ -773,7 +773,7 @@ async def create_invite_code(invite_data: CreateInviteCode, credentials: HTTPAut
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
-    code = generate_invite_code()
+    code = ''.join(__import__('secrets').choice(__import__('string').ascii_uppercase + __import__('string').digits) for _ in range(8))
     expires_at = None
     if invite_data.expires_in_hours:
         expires_at = datetime.utcnow() + timedelta(hours=invite_data.expires_in_hours)
