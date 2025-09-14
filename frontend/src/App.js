@@ -1222,6 +1222,58 @@ const GameInterface = () => {
     }
   };
 
+  const createFleet = async (planetData) => {
+    try {
+      const fleetNameInput = document.getElementById(`fleet-name-${planetData.planet_id}`);
+      const fleetName = fleetNameInput.value.trim();
+      
+      if (!fleetName) {
+        toast({ title: "Fehler", description: "Bitte geben Sie einen Flottennamen ein", variant: "destructive" });
+        return;
+      }
+
+      // Collect ship selections
+      const ships = [];
+      let hasSelection = false;
+      
+      for (const ship of planetData.ships) {
+        const quantityInput = document.getElementById(`ship-${ship.id}-quantity`);
+        const quantity = parseInt(quantityInput.value) || 0;
+        
+        if (quantity > 0) {
+          ships.push({
+            design_id: ship.design_id,
+            quantity: quantity
+          });
+          hasSelection = true;
+        }
+      }
+      
+      if (!hasSelection) {
+        toast({ title: "Fehler", description: "Bitte wählen Sie mindestens ein Schiff für die Flotte", variant: "destructive" });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/game/create-fleet`, {
+        planet_id: planetData.planet_id,
+        fleet_name: fleetName,
+        ships: ships
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ title: "Erfolg", description: `Flotte "${fleetName}" erstellt!` });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Flottenerstellung fehlgeschlagen',
+        variant: "destructive" 
+      });
+    }
+  };
+
   return (
     <div className="game-layout starfield">
       {/* Authentic Header */}
