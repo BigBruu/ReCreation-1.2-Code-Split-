@@ -1097,9 +1097,9 @@ async def get_component_levels():
     """Get available component types and levels"""
     return COMPONENT_LEVELS
 
-@api_router.post("/game/build-fleet", response_model=Fleet)
-async def build_fleet(build_data: BuildFleet, current_user: User = Depends(get_current_user)):
-    """Build ships and create fleet at planet"""
+@api_router.post("/game/build-ships")
+async def build_ships(build_data: BuildShips, current_user: User = Depends(get_current_user)):
+    """Build ships and store them in spaceport (not as fleet)"""
     # Check planet ownership
     planet = await db.planets.find_one({"id": build_data.planet_id, "owner_id": current_user.id})
     if not planet:
@@ -1139,17 +1139,128 @@ async def build_fleet(build_data: BuildFleet, current_user: User = Depends(get_c
         }}
     )
     
+    # Store ships in spaceport (not as fleet)
+    spaceport_ships = SpaceportShips(
+        user_id=current_user.id,
+        planet_id=build_data.planet_id,
+        design_id=build_data.design_id,
+        quantity=build_data.quantity
+    )
+    
+    await db.spaceport_ships.insert_one(spaceport_ships.dict())
+    
+    # Update user stats
+    await db.users.update_one(
+        {"id": current_user.id},
+        {"$inc": {"points": build_data.quantity * 50}}
+    )
+    
+    return {
+        "message": f"{build_data.quantity} Schiffe im Raumhafen produziert",
+        "ships": spaceport_ships.dict()
+    }
+
+@api_router.get("/game/spaceport-ships")
+async def get_spaceport_ships(current_user: User = Depends(get_current_user)):
+    """Get ships stored in user's spaceports"""
+    spaceport_ships = await db.spaceport_ships.find({"user_id": current_user.id}).to_list(1000)
+    
+    # Group by planet and add design info
+    result = {}
+    for ship_data in spaceport_ships:
+        ship = SpaceportShips(**ship_data)
+        planet = await db.planets.find_one({"id": ship.planet_id})
+        design = await db.ship_designs.find_one({"id": ship.design_id})
+        
+        if planet and design:
+            planet_key = f"{planet['name']} ({planet['position']['x']}, {planet['position']['y']})"
+            if planet_key not in result:
+                result[planet_key] = {
+                    "planet_id": ship.planet_id,
+                    "planet_name": planet['name'],
+                    "position": planet['position'],
+                    "ships": []
+                }
+            
+            result[planet_key]["ships"].append({
+                "id": ship.id,
+                "design_id": ship.design_id,
+                "design_name": design['name'],
+                "quantity": ship.quantity,
+                "created_at": ship.created_at
+            })
+    
+    return result
+
+@api_router.post("/game/create-fleet")
+async def create_fleet_from_spaceport(fleet_data: CreateFleetFromSpaceport, current_user: User = Depends(get_current_user)):
+    """Create fleet from ships in spaceport"""
+    # Check planet ownership
+    planet = await db.planets.find_one({"id": fleet_data.planet_id, "owner_id": current_user.id})
+    if not planet:
+        raise HTTPException(status_code=404, detail="Planet not found or not owned")
+    
+    planet_obj = Planet(**planet)
+    fleet_ships = []
+    slowest_speed = 999999
+    
+    # Process each ship type for the fleet
+    for ship_request in fleet_data.ships:
+        design_id = ship_request["design_id"]
+        requested_quantity = ship_request["quantity"]
+        
+        # Find ships in spaceport
+        spaceport_ship = await db.spaceport_ships.find_one({
+            "user_id": current_user.id,
+            "planet_id": fleet_data.planet_id,
+            "design_id": design_id
+        })
+        
+        if not spaceport_ship:
+            raise HTTPException(status_code=404, detail=f"No ships of design {design_id} found in spaceport")
+        
+        spaceport_ship_obj = SpaceportShips(**spaceport_ship)
+        
+        if spaceport_ship_obj.quantity < requested_quantity:
+            raise HTTPException(status_code=400, detail=f"Not enough ships. Have {spaceport_ship_obj.quantity}, requested {requested_quantity}")
+        
+        # Get design for speed calculation
+        design = await db.ship_designs.find_one({"id": design_id})
+        if design:
+            design_obj = ShipDesign(**design)
+            ship_speed = design_obj.calculated_stats.get("speed", 1)
+            slowest_speed = min(slowest_speed, ship_speed)
+        
+        fleet_ships.append({
+            "design_id": design_id,
+            "quantity": requested_quantity
+        })
+        
+        # Remove ships from spaceport
+        new_quantity = spaceport_ship_obj.quantity - requested_quantity
+        if new_quantity > 0:
+            await db.spaceport_ships.update_one(
+                {"id": spaceport_ship_obj.id},
+                {"$set": {"quantity": new_quantity}}
+            )
+        else:
+            await db.spaceport_ships.delete_one({"id": spaceport_ship_obj.id})
+    
     # Create fleet
     fleet = Fleet(
         user_id=current_user.id,
-        name=f"{build_data.fleet_name}",
+        name=fleet_data.fleet_name,
         position=planet_obj.position,
-        ships=[{"design_id": build_data.design_id, "quantity": build_data.quantity}],
-        fleet_speed=design_obj.calculated_stats["speed"]
+        ships=fleet_ships,
+        fleet_speed=slowest_speed
     )
     
     await db.fleets.insert_one(fleet.dict())
-    return fleet
+    
+    return {
+        "message": f"Flotte '{fleet_data.fleet_name}' erstellt",
+        "fleet": fleet.dict()
+    }
 
 @api_router.get("/game/fleets", response_model=List[Fleet])
 async def get_user_fleets(current_user: User = Depends(get_current_user)):
