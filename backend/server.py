@@ -681,6 +681,9 @@ async def register(user_data: UserCreateWithInvite):
         "$inc": {"current_uses": 1}}
     )
     
+    # Initialize research for user
+    await init_user_research(user.id)
+    
     # Assign spaceport to user
     await assign_spaceport_to_user(user.id, user.username)
     
