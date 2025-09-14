@@ -1024,6 +1024,7 @@ const GameInterface = () => {
   const [userPlanets, setUserPlanets] = useState([]);
   const [userFleets, setUserFleets] = useState([]);
   const [shipDesigns, setShipDesigns] = useState([]);
+  const [spaceportShips, setSpaceportShips] = useState({});
   const [userResearch, setUserResearch] = useState(null);
   const [researchCosts, setResearchCosts] = useState(null);
   const [componentLevels, setComponentLevels] = useState(null);
