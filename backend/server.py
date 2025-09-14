@@ -360,6 +360,39 @@ async def verify_admin_access(password: str):
     config = await get_game_config()
     return password == config.admin_password
 
+async def init_user_research(user_id: str):
+    """Initialize research levels for a new user - all start at level 0"""
+    existing_research = await db.user_research.find_one({"user_id": user_id})
+    if existing_research:
+        return UserResearch(**existing_research)
+    
+    # Initialize all technologies at level 0
+    research_levels = []
+    for category, technologies in RESEARCH_BASE_COSTS.items():
+        for tech_name in technologies:
+            research_levels.append(ResearchLevel(
+                category=category,
+                technology=tech_name,
+                level=0
+            ))
+    
+    user_research = UserResearch(
+        user_id=user_id,
+        research_levels=research_levels
+    )
+    
+    await db.user_research.insert_one(user_research.dict())
+    return user_research
+
+def calculate_research_cost(base_cost: int, current_level: int) -> int:
+    """Calculate research cost with 15% reduction per level"""
+    reduction_factor = (0.85 ** current_level)  # 15% reduction per level
+    return int(base_cost * reduction_factor * (current_level + 1))
+
+def calculate_research_time(base_time_hours: float, current_level: int) -> float:
+    """Calculate research time - increases with level"""
+    return base_time_hours * (current_level + 1)
+
 # --- AUTHENTIC GAME FUNCTIONS ---
 def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     """Calculate authentic ship statistics including mining units"""
