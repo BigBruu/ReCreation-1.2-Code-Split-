@@ -349,11 +349,6 @@ async def get_game_config():
         return await init_game_config()
     return GameConfig(**config)
 
-def generate_invite_code():
-    """Generate a random invite code"""
-    import string
-    import secrets
-    return ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
 
 async def verify_admin_access(password: str):
     """Verify admin password"""
