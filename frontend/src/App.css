@@ -640,16 +640,87 @@
   box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
 }
 
-/* Print styles */
-@media print {
-  .starfield::before,
-  .modal-backdrop,
-  .sidebar-actions,
-  .logout-btn {
-    @apply hidden;
-  }
-  
-  .game-layout {
-    @apply bg-white text-black;
-  }
+/* Research System Styles */
+.research-content {
+  @apply space-y-6;
+}
+
+.research-content h3 {
+  @apply text-xl font-bold text-blue-400 mb-4;
+}
+
+.research-categories {
+  @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+}
+
+.research-category {
+  @apply bg-gray-800 p-4 rounded border border-gray-700;
+}
+
+.research-category h4 {
+  @apply text-lg font-semibold text-white mb-4 text-center;
+}
+
+.research-techs {
+  @apply space-y-3;
+}
+
+.research-tech {
+  @apply bg-gray-900 p-3 rounded border border-gray-600;
+}
+
+.tech-header {
+  @apply flex justify-between items-center mb-2;
+}
+
+.tech-name {
+  @apply font-semibold text-white capitalize;
+}
+
+.tech-level {
+  @apply text-xs bg-blue-600 text-white px-2 py-1 rounded;
+}
+
+.tech-details {
+  @apply space-y-1 mb-3;
+}
+
+.tech-cost {
+  @apply text-sm text-gray-300;
+}
+
+.tech-reduction {
+  @apply text-xs text-green-400;
+}
+
+.research-progress {
+  @apply space-y-1;
+}
+
+.researching-indicator {
+  @apply text-sm text-orange-400 font-semibold;
+}
+
+.research-time {
+  @apply text-xs text-gray-400;
+}
+
+.research-btn {
+  @apply w-full py-2 px-3 text-sm;
+}
+
+.research-info {
+  @apply bg-gray-800 p-4 rounded border border-gray-700;
+}
+
+.research-info h4 {
+  @apply font-semibold text-white mb-3;
+}
+
+.research-info ul {
+  @apply space-y-1 text-sm text-gray-300;
+}
+
+.research-info li {
+  @apply list-none;
 }
