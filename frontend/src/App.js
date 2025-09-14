@@ -1272,6 +1272,63 @@ const GameInterface = () => {
                         <span>Bauzeit: {design.calculated_stats.build_time_ticks} Ticks</span>
                       </div>
                     </div>
+                    
+                    {/* Ship Production Section */}
+                    <div className="production-section">
+                      <h6>Schiffe produzieren:</h6>
+                      <div className="production-controls">
+                        {userPlanets.length > 0 ? (
+                          <div className="production-form">
+                            <select 
+                              id={`planet-${design.id}`}
+                              className="production-select"
+                            >
+                              <option value="">Planet wählen...</option>
+                              {userPlanets.map(planet => (
+                                <option key={planet.id} value={planet.id}>
+                                  {planet.name} ({planet.position.x}, {planet.position.y})
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              placeholder="Anzahl"
+                              min="1"
+                              max="1000"
+                              id={`quantity-${design.id}`}
+                              className="production-input"
+                            />
+                            <input
+                              type="text"
+                              placeholder="Flottenname"
+                              id={`fleet-name-${design.id}`}
+                              className="production-input"
+                            />
+                            <button
+                              onClick={() => handleBuildShips(design.id)}
+                              className="btn-success production-btn"
+                            >
+                              Produzieren
+                            </button>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-400">
+                            Keine Planeten verfügbar für Produktion
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Show build costs */}
+                      <div className="build-costs">
+                        <h6>Baukosten pro Schiff:</h6>
+                        <div className="cost-display">
+                          <span className="resource-food">🌾 {design.calculated_stats.build_cost?.food || 0}</span>
+                          <span className="resource-metal">⚙️ {design.calculated_stats.build_cost?.metal || 0}</span>
+                          <span className="resource-silicon">💎 {design.calculated_stats.build_cost?.silicon || 0}</span>
+                          <span className="resource-hydrogen">⚡ {design.calculated_stats.build_cost?.hydrogen || 0}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
