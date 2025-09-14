@@ -1422,6 +1422,26 @@ const GameInterface = () => {
             </div>
           )}
 
+          {activeTab === 'einrichtungen' && (
+            <div className="facilities-content">
+              <h3>Planeten & Einrichtungen</h3>
+              <div className="planets-list">
+                {userPlanets.map(planet => (
+                  <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
+                    <h4>{planet.name}</h4>
+                    <div className="planet-position">Position: ({planet.position.x}, {planet.position.y})</div>
+                    <div className="planet-resources">
+                      <div>🌾 Nahrung: {planet.resources.food.toLocaleString()}</div>
+                      <div>⚙️ Metall: {planet.resources.metal.toLocaleString()}</div>
+                      <div>💎 Silizium: {planet.resources.silicon.toLocaleString()}</div>
+                      <div>⚡ Wasserstoff: {planet.resources.hydrogen.toLocaleString()}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'technologie' && (
             <div className="research-content">
               <h3>Forschung - Alle starten bei Level 0</h3>
