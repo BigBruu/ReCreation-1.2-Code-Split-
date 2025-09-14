@@ -539,8 +539,38 @@ async def init_game_state():
     return GameState(**existing_state)
 
 async def process_tick():
-    """Process authentic game tick - movement and mining only"""
+    """Process authentic game tick - movement, mining, and research"""
     config = await get_game_config()
+    
+    # Process completed research
+    current_time = datetime.utcnow()
+    all_research = await db.user_research.find({}).to_list(1000)
+    
+    for research_data in all_research:
+        research_obj = UserResearch(**research_data)
+        research_updated = False
+        
+        for i, level in enumerate(research_obj.research_levels):
+            if (level.researching and level.research_end_time and 
+                level.research_end_time <= current_time):
+                # Research completed
+                research_obj.research_levels[i].level += 1
+                research_obj.research_levels[i].researching = False
+                research_obj.research_levels[i].research_start_time = None
+                research_obj.research_levels[i].research_end_time = None
+                research_updated = True
+                
+                # Award points for research completion
+                await db.users.update_one(
+                    {"id": research_obj.user_id},
+                    {"$inc": {"points": 1000}}  # 1000 points per research level
+                )
+        
+        if research_updated:
+            await db.user_research.update_one(
+                {"user_id": research_obj.user_id},
+                {"$set": research_obj.dict()}
+            )
     
     # Update fleets in movement
     fleets = await db.fleets.find({"movement_end_time": {"$lte": datetime.utcnow()}}).to_list(1000)
