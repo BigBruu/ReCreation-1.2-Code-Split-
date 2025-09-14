@@ -259,6 +259,24 @@ class MoveFleet(BaseModel):
     fleet_id: str
     target_position: Position
 
+class BuildShips(BaseModel):
+    planet_id: str
+    design_id: str
+    quantity: int
+
+class SpaceportShips(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    planet_id: str
+    design_id: str
+    quantity: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class CreateFleetFromSpaceport(BaseModel):
+    planet_id: str
+    fleet_name: str
+    ships: List[Dict[str, Any]]  # [{"design_id": "...", "quantity": 100}]
+
 # --- RESEARCH SYSTEM MODELS ---
 class ResearchLevel(BaseModel):
     category: str  # "drives", "shields", "weapons"
