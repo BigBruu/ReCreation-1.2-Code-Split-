@@ -1314,6 +1314,101 @@ const GameInterface = () => {
 
         {/* Main Content */}
         <div className="game-content">
+          {activeTab === 'raumhafen' && (
+            <div className="spaceport-content">
+              <h3>🚀 Raumhafen - Schiffe & Flotten</h3>
+              
+              {/* Ships in Spaceport */}
+              <div className="spaceport-ships">
+                <h4>Schiffe im Raumhafen</h4>
+                {Object.keys(spaceportShips).length > 0 ? (
+                  Object.entries(spaceportShips).map(([planetKey, planetData]) => (
+                    <div key={planetKey} className="spaceport-planet">
+                      <h5>{planetData.planet_name} ({planetData.position.x}, {planetData.position.y})</h5>
+                      <div className="spaceport-ships-list">
+                        {planetData.ships.map(ship => (
+                          <div key={ship.id} className="spaceport-ship">
+                            <span className="ship-design">{ship.design_name}</span>
+                            <span className="ship-quantity">x{ship.quantity}</span>
+                            <span className="ship-date">
+                              {new Date(ship.created_at).toLocaleDateString('de-DE')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Fleet Creation */}
+                      <div className="fleet-creation">
+                        <h6>Flotte erstellen:</h6>
+                        <input
+                          type="text"
+                          placeholder="Flottenname"
+                          id={`fleet-name-${planetData.planet_id}`}
+                          className="fleet-name-input"
+                        />
+                        <div className="ship-selection">
+                          {planetData.ships.map(ship => (
+                            <div key={ship.id} className="ship-selector">
+                              <label>{ship.design_name}:</label>
+                              <input
+                                type="number"
+                                min="0"
+                                max={ship.quantity}
+                                placeholder="0"
+                                id={`ship-${ship.id}-quantity`}
+                                className="ship-quantity-input"
+                              />
+                              <span className="max-available">/{ship.quantity}</span>
+                            </div>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => createFleet(planetData)}
+                          className="btn-primary create-fleet-btn"
+                        >
+                          Flotte erstellen
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-400">Keine Schiffe im Raumhafen. Produzieren Sie Schiffe in der Werft.</p>
+                )}
+              </div>
+
+              {/* Active Fleets */}
+              <div className="active-fleets">
+                <h4>Aktive Flotten ({userFleets.length})</h4>
+                {userFleets.map(fleet => (
+                  <div key={fleet.id} className="fleet-card">
+                    <h5>{fleet.name}</h5>
+                    <div className="fleet-position">
+                      Position: ({fleet.position.x}, {fleet.position.y})
+                    </div>
+                    <div className="fleet-ships">
+                      {fleet.ships.map((shipGroup, i) => {
+                        const design = shipDesigns.find(d => d.id === shipGroup.design_id);
+                        return (
+                          <div key={i} className="fleet-ship-group">
+                            {design?.name || 'Unbekanntes Design'}: {shipGroup.quantity}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="fleet-stats">
+                      Geschwindigkeit: {fleet.fleet_speed} pc/tick
+                      {fleet.movement_end_time && (
+                        <div className="movement-info">
+                          Ankunft: {new Date(fleet.movement_end_time).toLocaleString('de-DE')}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {activeTab === 'observatorium' && (
             <Observatory
               centerPosition={centerPosition}
