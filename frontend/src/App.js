@@ -1280,6 +1280,7 @@ const GameInterface = () => {
           <div className="sidebar-nav">
             {[
               { id: 'observatorium', label: 'Observatorium' },
+              { id: 'raumhafen', label: 'Raumhafen' },
               { id: 'einrichtungen', label: 'Einrichtungen' },
               { id: 'technologie', label: 'Technologie' },
               { id: 'werft', label: 'Werft' },
