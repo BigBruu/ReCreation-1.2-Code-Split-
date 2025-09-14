@@ -1162,6 +1162,103 @@ async def get_rankings():
         })
     return rankings
 
+# --- RESEARCH ROUTES ---
+@api_router.get("/game/research", response_model=UserResearch)
+async def get_user_research(current_user: User = Depends(get_current_user)):
+    """Get user's research levels"""
+    research = await db.user_research.find_one({"user_id": current_user.id})
+    if not research:
+        research = await init_user_research(current_user.id)
+        return research
+    return UserResearch(**research)
+
+@api_router.post("/game/research/start")
+async def start_research(research_data: StartResearch, current_user: User = Depends(get_current_user)):
+    """Start researching a technology"""
+    # Get user's research data
+    research = await db.user_research.find_one({"user_id": current_user.id})
+    if not research:
+        research = await init_user_research(current_user.id)
+        research_obj = research
+    else:
+        research_obj = UserResearch(**research)
+    
+    # Find the specific technology
+    tech_research = None
+    for level in research_obj.research_levels:
+        if level.category == research_data.category and level.technology == research_data.technology:
+            tech_research = level
+            break
+    
+    if not tech_research:
+        raise HTTPException(status_code=404, detail="Technology not found")
+    
+    # Check if already researching
+    if tech_research.researching:
+        raise HTTPException(status_code=400, detail="Technology is already being researched")
+    
+    # Check if user has any active research
+    for level in research_obj.research_levels:
+        if level.researching:
+            raise HTTPException(status_code=400, detail="You can only research one technology at a time")
+    
+    # Get research costs and validate resources
+    tech_costs = RESEARCH_BASE_COSTS[research_data.category][research_data.technology]
+    actual_cost = calculate_research_cost(tech_costs["base_cost"], tech_research.level)
+    research_time = calculate_research_time(tech_costs["base_time_hours"], tech_research.level)
+    
+    # Check user's total food resources
+    user_planets = await db.planets.find({"owner_id": current_user.id}).to_list(100)
+    total_food = sum(planet["resources"]["food"] for planet in user_planets)
+    
+    if total_food < actual_cost:
+        raise HTTPException(status_code=400, detail=f"Insufficient food. Need {actual_cost}, have {total_food}")
+    
+    # Deduct food costs proportionally from planets
+    remaining_cost = actual_cost
+    for planet in user_planets:
+        if remaining_cost <= 0:
+            break
+        
+        planet_food = planet["resources"]["food"]
+        if planet_food > 0:
+            deduction = min(planet_food, remaining_cost)
+            await db.planets.update_one(
+                {"id": planet["id"]},
+                {"$inc": {"resources.food": -deduction}}
+            )
+            remaining_cost -= deduction
+    
+    # Start research
+    research_start = datetime.utcnow()
+    research_end = research_start + timedelta(hours=research_time)
+    
+    # Update research status
+    for i, level in enumerate(research_obj.research_levels):
+        if level.category == research_data.category and level.technology == research_data.technology:
+            research_obj.research_levels[i].researching = True
+            research_obj.research_levels[i].research_start_time = research_start
+            research_obj.research_levels[i].research_end_time = research_end
+            break
+    
+    # Save to database
+    await db.user_research.update_one(
+        {"user_id": current_user.id},
+        {"$set": research_obj.dict()}
+    )
+    
+    return {
+        "message": f"Research started for {research_data.technology}",
+        "cost": actual_cost,
+        "completion_time": research_end.isoformat(),
+        "duration_hours": research_time
+    }
+
+@api_router.get("/game/research/costs")
+async def get_research_costs():
+    """Get research base costs and times"""
+    return RESEARCH_BASE_COSTS
+
 @api_router.post("/game/tick")
 async def manual_tick():
     """Manual tick processing"""
