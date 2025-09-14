@@ -705,6 +705,9 @@ async def login(user_data: UserLogin):
     if user["spaceport_position"]["x"] == -1:
         await assign_spaceport_to_user(user["id"], user["username"])
     
+    # Initialize research if not exists
+    await init_user_research(user["id"])
+    
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user["username"]}, expires_delta=access_token_expires
