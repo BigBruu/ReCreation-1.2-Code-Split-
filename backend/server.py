@@ -259,6 +259,53 @@ class MoveFleet(BaseModel):
     fleet_id: str
     target_position: Position
 
+# --- RESEARCH SYSTEM MODELS ---
+class ResearchLevel(BaseModel):
+    category: str  # "drives", "shields", "weapons"
+    technology: str  # "segel", "quarz", "laser", etc.
+    level: int = 0  # Current research level
+    researching: bool = False
+    research_start_time: Optional[datetime] = None
+    research_end_time: Optional[datetime] = None
+
+class UserResearch(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    research_levels: List[ResearchLevel] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class StartResearch(BaseModel):
+    category: str
+    technology: str
+
+# Research costs and times (authentic from original)
+RESEARCH_BASE_COSTS = {
+    "drives": {
+        "segel": {"base_cost": 5000, "base_time_hours": 1},
+        "fusion": {"base_cost": 750000, "base_time_hours": 24},
+        "antimaterie": {"base_cost": 10000000, "base_time_hours": 72},
+        "ionenstrahl": {"base_cost": 100000, "base_time_hours": 12},
+        "rakete": {"base_cost": 1000, "base_time_hours": 0.5}
+    },
+    "shields": {
+        "stahl": {"base_cost": 2000, "base_time_hours": 0.5},
+        "aluminium": {"base_cost": 2500, "base_time_hours": 0.5},
+        "quarz": {"base_cost": 50000, "base_time_hours": 6},
+        "titan": {"base_cost": 200000, "base_time_hours": 18},
+        "diamant": {"base_cost": 500000, "base_time_hours": 24},
+        "kupfer": {"base_cost": 1000000, "base_time_hours": 36},
+        "keramik": {"base_cost": 2500000, "base_time_hours": 48},
+        "chrom": {"base_cost": 800000, "base_time_hours": 30}
+    },
+    "weapons": {
+        "projektil": {"base_cost": 1500, "base_time_hours": 0.5},
+        "laser": {"base_cost": 500000, "base_time_hours": 18},
+        "konventionell": {"base_cost": 25000, "base_time_hours": 4},
+        "emp": {"base_cost": 1500000, "base_time_hours": 36},
+        "plasma": {"base_cost": 7500000, "base_time_hours": 60}
+    }
+}
+
 # --- AUTH FUNCTIONS ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
