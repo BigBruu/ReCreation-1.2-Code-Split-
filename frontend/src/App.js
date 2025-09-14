@@ -1393,22 +1393,80 @@ const GameInterface = () => {
             </div>
           )}
 
-          {activeTab === 'einrichtungen' && (
-            <div className="facilities-content">
-              <h3>Planeten & Einrichtungen</h3>
-              <div className="planets-list">
-                {userPlanets.map(planet => (
-                  <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
-                    <h4>{planet.name}</h4>
-                    <div className="planet-position">Position: ({planet.position.x}, {planet.position.y})</div>
-                    <div className="planet-resources">
-                      <div>🌾 Nahrung: {planet.resources.food.toLocaleString()}</div>
-                      <div>⚙️ Metall: {planet.resources.metal.toLocaleString()}</div>
-                      <div>💎 Silizium: {planet.resources.silicon.toLocaleString()}</div>
-                      <div>⚡ Wasserstoff: {planet.resources.hydrogen.toLocaleString()}</div>
+          {activeTab === 'technologie' && (
+            <div className="research-content">
+              <h3>Forschung - Alle starten bei Level 0</h3>
+              <div className="research-categories">
+                {['drives', 'shields', 'weapons'].map(category => (
+                  <div key={category} className="research-category">
+                    <h4>
+                      {category === 'drives' ? '🚀 Antriebe' : 
+                       category === 'shields' ? '🛡️ Schilde' : 
+                       '⚔️ Waffen'}
+                    </h4>
+                    <div className="research-techs">
+                      {userResearch?.research_levels
+                        .filter(tech => tech.category === category)
+                        .map(tech => {
+                          const baseCost = researchCosts?.[category]?.[tech.technology]?.base_cost || 0;
+                          const actualCost = calculateResearchCost(baseCost, tech.level);
+                          const isResearching = tech.researching;
+                          
+                          return (
+                            <div key={tech.technology} className="research-tech">
+                              <div className="tech-header">
+                                <span className="tech-name">
+                                  {tech.technology.charAt(0).toUpperCase() + tech.technology.slice(1)}
+                                </span>
+                                <span className="tech-level">Level {tech.level}</span>
+                              </div>
+                              
+                              <div className="tech-details">
+                                <div className="tech-cost">
+                                  Kosten: <span className="resource-food">{actualCost.toLocaleString()} Nahrung</span>
+                                </div>
+                                {tech.level > 0 && (
+                                  <div className="tech-reduction">
+                                    15% Kostenreduktion erreicht
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {isResearching ? (
+                                <div className="research-progress">
+                                  <span className="researching-indicator">🔬 Erforscht...</span>
+                                  <div className="research-time">
+                                    Fertig: {tech.research_end_time ? 
+                                      new Date(tech.research_end_time).toLocaleString('de-DE') : 'Berechne...'
+                                    }
+                                  </div>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => startResearch(category, tech.technology)}
+                                  className="btn-primary research-btn"
+                                  disabled={userResearch?.research_levels.some(r => r.researching)}
+                                >
+                                  Erforschen
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                   </div>
                 ))}
+              </div>
+              
+              <div className="research-info">
+                <h4>📚 Forschungs-Regeln:</h4>
+                <ul>
+                  <li>• Alle Technologien starten bei Level 0</li>
+                  <li>• Nur eine Forschung gleichzeitig möglich</li>
+                  <li>• Kostenverringerung pro Level: 15%</li>
+                  <li>• Forschung kostet nur Nahrung</li>
+                  <li>• Forschungszeit steigt mit Level</li>
+                </ul>
               </div>
             </div>
           )}
