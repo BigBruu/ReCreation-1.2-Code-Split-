@@ -1199,6 +1199,35 @@ const GameInterface = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const calculateResearchCost = (baseCost, currentLevel) => {
+    const reductionFactor = Math.pow(0.85, currentLevel); // 15% reduction per level
+    return Math.floor(baseCost * reductionFactor * (currentLevel + 1));
+  };
+
+  const startResearch = async (category, technology) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/game/research/start`, {
+        category,
+        technology
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ 
+        title: "Forschung gestartet!", 
+        description: `${technology} wird erforscht. Kosten: ${response.data.cost.toLocaleString()} Nahrung` 
+      });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Forschung konnte nicht gestartet werden',
+        variant: "destructive" 
+      });
+    }
+  };
+
   return (
     <div className="game-layout starfield">
       {/* Authentic Header */}
