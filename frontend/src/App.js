@@ -1127,11 +1127,9 @@ const GameInterface = () => {
     try {
       const planetSelect = document.getElementById(`planet-${designId}`);
       const quantityInput = document.getElementById(`quantity-${designId}`);
-      const fleetNameInput = document.getElementById(`fleet-name-${designId}`);
       
       const planetId = planetSelect.value;
       const quantity = parseInt(quantityInput.value);
-      const fleetName = fleetNameInput.value.trim();
       
       if (!planetId) {
         toast({ title: "Fehler", description: "Bitte wählen Sie einen Planeten", variant: "destructive" });
@@ -1142,28 +1140,21 @@ const GameInterface = () => {
         toast({ title: "Fehler", description: "Bitte geben Sie eine gültige Anzahl ein", variant: "destructive" });
         return;
       }
-      
-      if (!fleetName) {
-        toast({ title: "Fehler", description: "Bitte geben Sie einen Flottennamen ein", variant: "destructive" });
-        return;
-      }
 
       const token = localStorage.getItem('token');
-      await axios.post(`${API}/game/build-fleet`, {
+      const response = await axios.post(`${API}/game/build-ships`, {
         planet_id: planetId,
         design_id: designId,
-        quantity: quantity,
-        fleet_name: fleetName
+        quantity: quantity
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      toast({ title: "Erfolg", description: `${quantity} Schiffe in Produktion!` });
+      toast({ title: "Erfolg", description: `${quantity} Schiffe im Raumhafen produziert!` });
       
       // Reset form
       planetSelect.value = '';
       quantityInput.value = '';
-      fleetNameInput.value = '';
       
       fetchGameData();
     } catch (error) {
