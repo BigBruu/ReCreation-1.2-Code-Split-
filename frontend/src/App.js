@@ -1379,17 +1379,11 @@ const GameInterface = () => {
                               id={`quantity-${design.id}`}
                               className="production-input"
                             />
-                            <input
-                              type="text"
-                              placeholder="Flottenname"
-                              id={`fleet-name-${design.id}`}
-                              className="production-input"
-                            />
                             <button
                               onClick={() => handleBuildShips(design.id)}
                               className="btn-success production-btn"
                             >
-                              Produzieren
+                              Im Raumhafen bauen
                             </button>
                           </div>
                         ) : (
