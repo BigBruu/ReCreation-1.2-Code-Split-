@@ -1056,7 +1056,7 @@ const GameInterface = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [gameStateRes, planetsRes, fleetsRes, designsRes, componentRes, rankingsRes, researchRes, costsRes] = await Promise.all([
+      const [gameStateRes, planetsRes, fleetsRes, designsRes, componentRes, rankingsRes, researchRes, costsRes, spaceportRes] = await Promise.all([
         axios.get(`${API}/game/state`, { headers }),
         axios.get(`${API}/game/planets`, { headers }),
         axios.get(`${API}/game/fleets`, { headers }),
@@ -1064,7 +1064,8 @@ const GameInterface = () => {
         axios.get(`${API}/game/component-levels`, { headers }),
         axios.get(`${API}/game/rankings`, { headers }),
         axios.get(`${API}/game/research`, { headers }),
-        axios.get(`${API}/game/research/costs`, { headers })
+        axios.get(`${API}/game/research/costs`, { headers }),
+        axios.get(`${API}/game/spaceport-ships`, { headers })
       ]);
 
       setGameState(gameStateRes.data);
@@ -1075,6 +1076,7 @@ const GameInterface = () => {
       setRankings(rankingsRes.data);
       setUserResearch(researchRes.data);
       setResearchCosts(costsRes.data);
+      setSpaceportShips(spaceportRes.data);
     } catch (error) {
       console.error('Failed to fetch game data:', error);
     }
