@@ -1435,7 +1435,7 @@ const GameInterface = () => {
                   <div key={fleet.id} className="fleet-card">
                     <h5>{fleet.name}</h5>
                     <div className="fleet-position">
-                      Position: ({fleet.position.x}, {fleet.position.y})
+                      Position: ({fleet.position.x}:{fleet.position.y})
                     </div>
                     <div className="fleet-ships">
                       {fleet.ships.map((shipGroup, i) => {
