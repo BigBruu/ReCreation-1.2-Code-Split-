@@ -1031,6 +1031,7 @@ const GameInterface = () => {
   const [rankings, setRankings] = useState([]);
   const [activeTab, setActiveTab] = useState('observatorium');
   const [selectedField, setSelectedField] = useState(null);
+  const [targetCoordinates, setTargetCoordinates] = useState(null);
   const [showShipCalculator, setShowShipCalculator] = useState(false);
 
   useEffect(() => {
