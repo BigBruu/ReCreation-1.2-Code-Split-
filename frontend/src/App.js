@@ -967,7 +967,7 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
           <button onClick={() => handleNavigation('up')}>↑</button>
           <div>
             <button onClick={() => handleNavigation('left')}>←</button>
-            <span className="coordinates">({centerPosition.x}, {centerPosition.y})</span>
+            <span className="coordinates">({centerPosition.x}:{centerPosition.y})</span>
             <button onClick={() => handleNavigation('right')}>→</button>
           </div>
           <button onClick={() => handleNavigation('down')}>↓</button>
