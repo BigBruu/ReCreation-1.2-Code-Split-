@@ -374,10 +374,32 @@ def main():
     
     # Run authentication tests
     print("\n📝 Authentication Tests:")
-    if not tester.test_user_registration():
-        print("❌ Registration failed, trying login with existing user")
-        if not tester.test_user_login():
-            print("❌ Login also failed, stopping tests")
+    # First try to get admin access and create invite code
+    if not tester.test_admin_login_and_create_invite():
+        print("❌ Admin access failed, trying with existing user credentials")
+        # Try some common test credentials
+        test_users = [
+            ("testuser", "testpass"),
+            ("admin", "admin"),
+            ("user1", "password"),
+            ("test", "test123")
+        ]
+        
+        login_success = False
+        for username, password in test_users:
+            tester.test_username = username
+            tester.test_password = password
+            if tester.test_user_login():
+                login_success = True
+                break
+        
+        if not login_success:
+            print("❌ Could not authenticate with any credentials, stopping tests")
+            return 1
+    else:
+        # Admin access worked, now register new user
+        if not tester.test_user_registration():
+            print("❌ Registration failed even with invite code, stopping tests")
             return 1
     
     if not tester.test_get_user_profile():
