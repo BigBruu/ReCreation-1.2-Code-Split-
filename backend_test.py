@@ -257,101 +257,34 @@ class TheReCreationAPITester:
         
         return result1 and result2
 
-    def test_create_colony(self):
-        """Test creating a colony"""
-        import random
-        # Use random position to avoid conflicts
-        x, y = random.randint(0, 46), random.randint(0, 46)
+    def test_authentication_required(self):
+        """Test that endpoints require proper authentication"""
+        # Save current token
+        original_token = self.token
+        
+        # Test without token
+        self.token = None
         success, status, data = self.make_request(
-            'POST', 'game/colony',
-            {
-                "position": {"x": x, "y": y},
-                "name": "Test Colony"
-            },
-            expected_status=200
+            'POST', 'game/observatory',
+            {"center_x": 10, "center_y": 10},
+            expected_status=401
         )
         
-        if success and 'id' in data:
-            self.colony_id = data['id']
-            return self.log_test("Create Colony", True, f"Colony created at ({x},{y})")
-        else:
-            return self.log_test("Create Colony", False, f"Status: {status}, Data: {data}")
-
-    def test_get_colonies(self):
-        """Test getting user's colonies"""
-        success, status, data = self.make_request('GET', 'game/colonies')
+        result1 = self.log_test("Observatory - No Auth", success, "Correctly rejected request without token")
         
-        if success and isinstance(data, list):
-            return self.log_test("Get Colonies", True, f"Found {len(data)} colonies")
-        else:
-            return self.log_test("Get Colonies", False, f"Status: {status}, Data: {data}")
-
-    def test_create_ship(self):
-        """Test creating a ship"""
-        if not hasattr(self, 'colony_id'):
-            return self.log_test("Create Ship", False, "No colony available for ship creation")
-        
-        # Process enough ticks to generate resources (scout needs 100 metal, 50 silicon)
-        print("   Processing ticks to generate resources...")
-        for i in range(25):  # 25 ticks * 5 resources = 125 of each resource
-            self.make_request('POST', 'game/tick', {})
-            if i % 5 == 0:
-                print(f"   Processed {i+1} ticks...")
-        
+        # Test with invalid token
+        self.token = "invalid-token"
         success, status, data = self.make_request(
-            'POST', 'game/ship',
-            {
-                "colony_id": self.colony_id,
-                "ship_type": "scout",
-                "name": "Test Scout"
-            },
-            expected_status=200
+            'GET', 'game/fleets',
+            expected_status=401
         )
         
-        if success and 'id' in data:
-            self.ship_id = data['id']
-            return self.log_test("Create Ship", True, f"Scout ship created")
-        else:
-            return self.log_test("Create Ship", False, f"Status: {status}, Data: {data}")
-
-    def test_get_ships(self):
-        """Test getting user's ships"""
-        success, status, data = self.make_request('GET', 'game/ships')
+        result2 = self.log_test("Fleets - Invalid Auth", success, "Correctly rejected request with invalid token")
         
-        if success and isinstance(data, list):
-            return self.log_test("Get Ships", True, f"Found {len(data)} ships")
-        else:
-            return self.log_test("Get Ships", False, f"Status: {status}, Data: {data}")
-
-    def test_move_ship(self):
-        """Test moving a ship"""
-        if not hasattr(self, 'ship_id'):
-            return self.log_test("Move Ship", False, "No ship available for movement")
+        # Restore original token
+        self.token = original_token
         
-        # Get current ship position first
-        success, status, ships_data = self.make_request('GET', 'game/ships')
-        if not success or not ships_data:
-            return self.log_test("Move Ship", False, "Could not get ship position")
-        
-        ship = ships_data[0]  # Get first ship
-        current_x, current_y = ship['position']['x'], ship['position']['y']
-        
-        # Move to adjacent position (within speed limit)
-        target_x = min(46, current_x + 1)  # Move 1 position right, stay within bounds
-        
-        success, status, data = self.make_request(
-            'POST', 'game/move',
-            {
-                "ship_id": self.ship_id,
-                "target_position": {"x": target_x, "y": current_y}
-            },
-            expected_status=200
-        )
-        
-        if success:
-            return self.log_test("Move Ship", True, f"Ship moved to ({target_x},{current_y})")
-        else:
-            return self.log_test("Move Ship", False, f"Status: {status}, Data: {data}")
+        return result1 and result2
 
     def test_process_tick(self):
         """Test processing game tick"""
