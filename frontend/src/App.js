@@ -1660,7 +1660,7 @@ const GameInterface = () => {
         {/* Field Info Panel */}
         {selectedField && (
           <div className="field-info-panel">
-            <h4>Feld ({selectedField.x}, {selectedField.y})</h4>
+            <h4>Feld ({selectedField.x}:{selectedField.y})</h4>
             {selectedField.planet ? (
               <div className="planet-info">
                 <h5>{selectedField.planet.name}</h5>
