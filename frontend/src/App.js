@@ -1438,7 +1438,7 @@ const GameInterface = () => {
                 <h4>Aktive Flotten ({userFleets.length})</h4>
                 {userFleets.map(fleet => (
                   <div key={fleet.id} className="fleet-card">
-                    <h5>{fleet.name}</h5>
+                    <h5>{fleet.name}{fleet.movement_end_time ? '*' : ''}</h5>
                     <div className="fleet-position">
                       Position: ({fleet.position.x}:{fleet.position.y})
                     </div>
@@ -1460,6 +1460,40 @@ const GameInterface = () => {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Fleet Movement Controls */}
+                    {!fleet.movement_end_time && (
+                      <div className="fleet-movement">
+                        <h6>Flotte bewegen:</h6>
+                        <div className="movement-controls">
+                          <input
+                            type="number"
+                            placeholder="X"
+                            min="0"
+                            max="46"
+                            id={`fleet-${fleet.id}-x`}
+                            className="coordinate-input"
+                            defaultValue={targetCoordinates?.x || ''}
+                          />
+                          <span>:</span>
+                          <input
+                            type="number"
+                            placeholder="Y"
+                            min="0"
+                            max="46"
+                            id={`fleet-${fleet.id}-y`}
+                            className="coordinate-input"
+                            defaultValue={targetCoordinates?.y || ''}
+                          />
+                          <button
+                            onClick={() => moveFleet(fleet.id)}
+                            className="btn-primary move-fleet-btn"
+                          >
+                            Bewegen
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
