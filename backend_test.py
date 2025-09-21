@@ -219,6 +219,79 @@ class TheReCreationAPITester:
         else:
             return self.log_test("Observatory API - Edge Coordinates", False, f"Status: {status}, Data: {data}")
 
+    def test_create_fleet_for_testing(self):
+        """Create a basic fleet for testing purposes"""
+        # First check if user has any planets
+        success, status, planets = self.make_request('GET', 'game/planets')
+        if not success or len(planets) == 0:
+            return self.log_test("Create Fleet - Get Planets", False, "No planets available")
+        
+        planet = planets[0]
+        planet_id = planet['id']
+        
+        # Check if user has any ship designs
+        success, status, designs = self.make_request('GET', 'game/ship-designs')
+        if not success:
+            return self.log_test("Create Fleet - Get Designs", False, f"Could not get ship designs: {status}")
+        
+        # If no designs, create a basic one
+        if len(designs) == 0:
+            design_success, design_status, design_data = self.make_request(
+                'POST', 'game/ship-design',
+                {
+                    "name": "Test Scout",
+                    "drive_type": "segel",
+                    "drive_level": 1,
+                    "drive_quantity": 1,
+                    "shield_type": "stahl",
+                    "shield_level": 1,
+                    "shield_quantity": 1,
+                    "weapon_type": "projektil",
+                    "weapon_level": 1,
+                    "weapon_quantity": 1,
+                    "mining_units": 0,
+                    "colony_units": 0
+                }
+            )
+            
+            if not design_success:
+                return self.log_test("Create Fleet - Create Design", False, f"Could not create ship design: {design_status}")
+            
+            design_id = design_data['id']
+            self.log_test("Create Fleet - Create Design", True, "Basic ship design created")
+        else:
+            design_id = designs[0]['id']
+        
+        # Try to build some ships first
+        build_success, build_status, build_data = self.make_request(
+            'POST', 'game/build-ships',
+            {
+                "planet_id": planet_id,
+                "design_id": design_id,
+                "quantity": 1
+            }
+        )
+        
+        if build_success:
+            self.log_test("Create Fleet - Build Ships", True, "Ships built in spaceport")
+            
+            # Now create fleet from spaceport ships
+            fleet_success, fleet_status, fleet_data = self.make_request(
+                'POST', 'game/create-fleet',
+                {
+                    "planet_id": planet_id,
+                    "fleet_name": "Test Fleet",
+                    "ships": [{"design_id": design_id, "quantity": 1}]
+                }
+            )
+            
+            if fleet_success:
+                return self.log_test("Create Fleet - Create Fleet", True, "Test fleet created successfully")
+            else:
+                return self.log_test("Create Fleet - Create Fleet", False, f"Fleet creation failed: {fleet_status}, {fleet_data}")
+        else:
+            return self.log_test("Create Fleet - Build Ships", False, f"Ship building failed: {build_status}, {build_data}")
+
     def test_fleet_apis(self):
         """Test Fleet-related APIs"""
         # First get user's fleets
@@ -229,9 +302,15 @@ class TheReCreationAPITester:
         
         self.log_test("Get User Fleets", True, f"Found {len(data)} fleets")
         
-        # If no fleets exist, we can't test fleet movement
+        # If no fleets exist, try to create one
         if len(data) == 0:
-            return self.log_test("Fleet Movement API", False, "No fleets available for movement testing")
+            if not self.test_create_fleet_for_testing():
+                return self.log_test("Fleet Movement API", False, "Could not create fleet for testing")
+            
+            # Get fleets again
+            success, status, data = self.make_request('GET', 'game/fleets')
+            if not success or len(data) == 0:
+                return self.log_test("Fleet Movement API", False, "Still no fleets available after creation attempt")
         
         # Test fleet movement with first available fleet
         fleet = data[0]
