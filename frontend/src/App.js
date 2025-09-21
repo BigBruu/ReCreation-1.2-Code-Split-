@@ -1565,7 +1565,7 @@ const GameInterface = () => {
                 {userPlanets.map(planet => (
                   <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
                     <h4>{planet.name}</h4>
-                    <div className="planet-position">Position: ({planet.position.x}, {planet.position.y})</div>
+                    <div className="planet-position">Position: ({planet.position.x}:{planet.position.y})</div>
                     <div className="planet-resources">
                       <div>🌾 Nahrung: {planet.resources.food.toLocaleString()}</div>
                       <div>⚙️ Metall: {planet.resources.metal.toLocaleString()}</div>
