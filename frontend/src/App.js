@@ -1227,6 +1227,41 @@ const GameInterface = () => {
     }
   };
 
+  const moveFleet = async (fleetId) => {
+    try {
+      const xInput = document.getElementById(`fleet-${fleetId}-x`);
+      const yInput = document.getElementById(`fleet-${fleetId}-y`);
+      
+      const x = parseInt(xInput.value);
+      const y = parseInt(yInput.value);
+      
+      if (isNaN(x) || isNaN(y) || x < 0 || x > 46 || y < 0 || y > 46) {
+        toast({ title: "Fehler", description: "Bitte geben Sie gültige Koordinaten ein (0-46)", variant: "destructive" });
+        return;
+      }
+
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/game/move-fleet`, {
+        fleet_id: fleetId,
+        target_position: { x, y }
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ title: "Erfolg", description: `Flotte bewegt sich zu (${x}:${y})!` });
+      
+      // Reset target coordinates
+      setTargetCoordinates(null);
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Flottenbewegung fehlgeschlagen',
+        variant: "destructive" 
+      });
+    }
+  };
+
   const createFleet = async (planetData) => {
     try {
       const fleetNameInput = document.getElementById(`fleet-name-${planetData.planet_id}`);
