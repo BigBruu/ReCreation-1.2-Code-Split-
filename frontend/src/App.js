@@ -1515,7 +1515,7 @@ const GameInterface = () => {
                               <option value="">Planet wählen...</option>
                               {userPlanets.map(planet => (
                                 <option key={planet.id} value={planet.id}>
-                                  {planet.name} ({planet.position.x}, {planet.position.y})
+                                  {planet.name} ({planet.position.x}:{planet.position.y})
                                 </option>
                               ))}
                             </select>
