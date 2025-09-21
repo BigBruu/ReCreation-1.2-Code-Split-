@@ -111,8 +111,8 @@ Observatorium Verbesserungen:
 
 ## backend:
   - task: "Observatory API für Klick-Navigation erweitern"
-    implemented: false
-    working: "NA"
+    implemented: true
+    working: true
     file: "server.py"
     stuck_count: 0
     priority: "high"
@@ -121,6 +121,9 @@ Observatorium Verbesserungen:
         - working: "NA"
         - agent: "main"
         - comment: "Neuer Task für Observatorium Verbesserungen"
+        - working: true
+        - agent: "testing"
+        - comment: "BACKEND TESTING COMPLETED: Observatory API (/api/game/observatory) is fully functional. Tested with different coordinates (spaceport center, arbitrary coordinates, edge coordinates). Returns proper 7x7 grid data with planets and fleets. Fleet Movement API (/api/game/move-fleet) is working correctly - tested fleet creation, movement with timing calculations, and error handling for invalid fleet IDs. Authentication is properly enforced (401/403 for unauthorized requests). All backend APIs are working as expected."
 
 ## frontend:
   - task: "Koordinaten-Format von (0,0) zu (0:0) ändern"
