@@ -194,10 +194,9 @@ Observatorium Verbesserungen:
 
 ## test_plan:
   current_focus:
-    - "Koordinaten-Format von (0,0) zu (0:0) ändern"
     - "Klick-Navigation vom Observatorium zum Raumhafen"
-    - "Observatory API für Klick-Navigation erweitern"
-  stuck_tasks: []
+  stuck_tasks: 
+    - "Klick-Navigation vom Observatorium zum Raumhafen"
   test_all: false
   test_priority: "high_first"
 
