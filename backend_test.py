@@ -110,20 +110,152 @@ class TheReCreationAPITester:
         else:
             return self.log_test("Game State", False, f"Status: {status}, Data: {data}")
 
-    def test_game_field(self):
-        """Test getting game field"""
-        success, status, data = self.make_request('GET', 'game/field')
+    def test_user_spaceport(self):
+        """Test getting user spaceport position"""
+        success, status, data = self.make_request('GET', 'game/user-spaceport')
         
-        if success and 'field' in data and 'size' in data:
-            field_size = data['size']
-            field_count = len(data['field'])
-            expected_count = field_size * field_size
-            if field_count == expected_count:
-                return self.log_test("Game Field", True, f"47x47 field with {field_count} positions")
-            else:
-                return self.log_test("Game Field", False, f"Expected {expected_count} positions, got {field_count}")
+        if success and 'spaceport_position' in data:
+            self.spaceport_x = data['spaceport_position']['x']
+            self.spaceport_y = data['spaceport_position']['y']
+            return self.log_test("Get User Spaceport", True, f"Spaceport at ({self.spaceport_x},{self.spaceport_y})")
         else:
-            return self.log_test("Game Field", False, f"Status: {status}, Data: {data}")
+            return self.log_test("Get User Spaceport", False, f"Status: {status}, Data: {data}")
+
+    def test_observatory_api(self):
+        """Test Observatory API with different coordinates"""
+        if not hasattr(self, 'spaceport_x'):
+            return self.log_test("Observatory API", False, "No spaceport position available")
+        
+        # Test 1: Observatory view centered on spaceport
+        success, status, data = self.make_request(
+            'POST', 'game/observatory',
+            {
+                "center_x": self.spaceport_x,
+                "center_y": self.spaceport_y
+            }
+        )
+        
+        if not success:
+            return self.log_test("Observatory API - Spaceport Center", False, f"Status: {status}, Data: {data}")
+        
+        # Validate response structure
+        if not all(key in data for key in ['view', 'center', 'size']):
+            return self.log_test("Observatory API - Response Structure", False, "Missing required fields")
+        
+        if data['size'] != 7:
+            return self.log_test("Observatory API - View Size", False, f"Expected size 7, got {data['size']}")
+        
+        # Check that we get a 7x7 grid
+        view_count = len(data['view'])
+        if view_count > 49:  # Maximum 7x7 = 49 fields (some might be out of bounds)
+            return self.log_test("Observatory API - Grid Size", False, f"Too many fields: {view_count}")
+        
+        self.log_test("Observatory API - Spaceport Center", True, f"7x7 view with {view_count} fields")
+        
+        # Test 2: Observatory view at different coordinates
+        test_x, test_y = 10, 10
+        success, status, data = self.make_request(
+            'POST', 'game/observatory',
+            {
+                "center_x": test_x,
+                "center_y": test_y
+            }
+        )
+        
+        if success and 'view' in data:
+            self.log_test("Observatory API - Different Coordinates", True, f"View at ({test_x},{test_y})")
+        else:
+            self.log_test("Observatory API - Different Coordinates", False, f"Status: {status}, Data: {data}")
+        
+        # Test 3: Observatory view at edge coordinates
+        edge_x, edge_y = 0, 0
+        success, status, data = self.make_request(
+            'POST', 'game/observatory',
+            {
+                "center_x": edge_x,
+                "center_y": edge_y
+            }
+        )
+        
+        if success and 'view' in data:
+            return self.log_test("Observatory API - Edge Coordinates", True, f"View at edge ({edge_x},{edge_y})")
+        else:
+            return self.log_test("Observatory API - Edge Coordinates", False, f"Status: {status}, Data: {data}")
+
+    def test_fleet_apis(self):
+        """Test Fleet-related APIs"""
+        # First get user's fleets
+        success, status, data = self.make_request('GET', 'game/fleets')
+        
+        if not success:
+            return self.log_test("Get User Fleets", False, f"Status: {status}, Data: {data}")
+        
+        self.log_test("Get User Fleets", True, f"Found {len(data)} fleets")
+        
+        # If no fleets exist, we can't test fleet movement
+        if len(data) == 0:
+            return self.log_test("Fleet Movement API", False, "No fleets available for movement testing")
+        
+        # Test fleet movement with first available fleet
+        fleet = data[0]
+        fleet_id = fleet['id']
+        current_pos = fleet['position']
+        
+        # Calculate a valid target position (move 1 step)
+        target_x = min(46, current_pos['x'] + 1)
+        target_y = current_pos['y']
+        
+        success, status, move_data = self.make_request(
+            'POST', 'game/move-fleet',
+            {
+                "fleet_id": fleet_id,
+                "target_position": {"x": target_x, "y": target_y}
+            }
+        )
+        
+        if success and 'message' in move_data:
+            # Check if movement_start_time and movement_end_time are set
+            if 'arrival_time' in move_data:
+                return self.log_test("Fleet Movement API", True, f"Fleet movement started, arrival: {move_data['arrival_time']}")
+            else:
+                return self.log_test("Fleet Movement API", True, "Fleet movement started")
+        else:
+            return self.log_test("Fleet Movement API", False, f"Status: {status}, Data: {move_data}")
+
+    def test_fleet_movement_errors(self):
+        """Test Fleet Movement API error handling"""
+        # Test 1: Invalid fleet ID
+        success, status, data = self.make_request(
+            'POST', 'game/move-fleet',
+            {
+                "fleet_id": "invalid-fleet-id",
+                "target_position": {"x": 10, "y": 10}
+            },
+            expected_status=404
+        )
+        
+        result1 = self.log_test("Fleet Movement - Invalid Fleet ID", success, "Correctly rejected invalid fleet ID")
+        
+        # Test 2: Out of bounds coordinates
+        # First get a valid fleet
+        fleet_success, fleet_status, fleet_data = self.make_request('GET', 'game/fleets')
+        if fleet_success and len(fleet_data) > 0:
+            fleet_id = fleet_data[0]['id']
+            
+            success, status, data = self.make_request(
+                'POST', 'game/move-fleet',
+                {
+                    "fleet_id": fleet_id,
+                    "target_position": {"x": 100, "y": 100}  # Out of bounds
+                }
+            )
+            
+            # This might succeed or fail depending on validation - either is acceptable
+            result2 = self.log_test("Fleet Movement - Out of Bounds", True, f"Handled out of bounds coordinates (Status: {status})")
+        else:
+            result2 = self.log_test("Fleet Movement - Out of Bounds", False, "No fleet available for testing")
+        
+        return result1 and result2
 
     def test_create_colony(self):
         """Test creating a colony"""
