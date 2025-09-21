@@ -124,40 +124,52 @@ Observatorium Verbesserungen:
 
 ## frontend:
   - task: "Koordinaten-Format von (0,0) zu (0:0) ändern"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
         - agent: "main"
-        - comment: "Neuer Task - Koordinaten-Format ändern"
+        - comment: "Implementiert - Alle Koordinaten-Anzeigen von (x,y) zu (x:y) Format geändert"
 
   - task: "Klick-Navigation vom Observatorium zum Raumhafen"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "App.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
         - agent: "main"
-        - comment: "Neuer Task - Klick-Navigation implementieren"
+        - comment: "Implementiert - handleFieldClick weitert zum Raumhafen mit auto-fill Koordinaten"
 
   - task: "Flotten-Status mit * für bewegende Flotten anzeigen"
-    implemented: false
+    implemented: true
     working: "NA"
     file: "App.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
         - agent: "main"
-        - comment: "Neuer Task - Movement-Status für Flotten"
+        - comment: "Implementiert - Flotten zeigen * für bewegende und normaler Name für stehende"
+
+  - task: "Flottenbewegung-Interface im Raumhafen"
+    implemented: true
+    working: "NA"
+    file: "App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Neuer Task - Flottenbewegung mit Koordinaten-Eingabe im Raumhafen hinzugefügt"
 
 ## metadata:
   created_by: "main_agent"
