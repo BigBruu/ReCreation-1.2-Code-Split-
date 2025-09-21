@@ -747,3 +747,25 @@
 .movement-info {
   @apply text-orange-400;
 }
+
+/* Fleet Movement Styles */
+.fleet-movement {
+  @apply mt-3 pt-3 border-t border-gray-600;
+}
+
+.fleet-movement h6 {
+  @apply text-sm font-semibold text-blue-400 mb-2;
+}
+
+.movement-controls {
+  @apply flex items-center space-x-2;
+}
+
+.coordinate-input {
+  @apply px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white w-16 text-center;
+  @apply focus:border-blue-400 focus:outline-none;
+}
+
+.move-fleet-btn {
+  @apply px-3 py-1 text-sm;
+}
