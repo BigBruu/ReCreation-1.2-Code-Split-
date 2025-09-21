@@ -56,14 +56,51 @@ class TheReCreationAPITester:
         except Exception as e:
             return False, 0, {"error": str(e)}
 
+    def test_admin_login_and_create_invite(self):
+        """Test admin login and create invite code"""
+        # Try admin login
+        success, status, data = self.make_request(
+            'POST', 'admin/login',
+            {"password": "admin2025"},
+            expected_status=200
+        )
+        
+        if success and 'access_token' in data:
+            admin_token = data['access_token']
+            
+            # Create invite code
+            headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {admin_token}'}
+            try:
+                response = requests.post(
+                    f"{self.api_url}/admin/invite-codes",
+                    json={"max_uses": 1},
+                    headers=headers,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    invite_data = response.json()
+                    self.invite_code = invite_data['code']
+                    return self.log_test("Admin Login & Create Invite", True, f"Invite code: {self.invite_code}")
+                else:
+                    return self.log_test("Admin Login & Create Invite", False, f"Failed to create invite: {response.status_code}")
+            except Exception as e:
+                return self.log_test("Admin Login & Create Invite", False, f"Error: {str(e)}")
+        else:
+            return self.log_test("Admin Login & Create Invite", False, f"Admin login failed: {status}")
+
     def test_user_registration(self):
-        """Test user registration"""
+        """Test user registration with invite code"""
+        if not hasattr(self, 'invite_code'):
+            return self.log_test("User Registration", False, "No invite code available")
+        
         success, status, data = self.make_request(
             'POST', 'register', 
             {
                 "username": self.test_username,
                 "email": self.test_email,
-                "password": self.test_password
+                "password": self.test_password,
+                "invite_code": self.invite_code
             },
             expected_status=200
         )
