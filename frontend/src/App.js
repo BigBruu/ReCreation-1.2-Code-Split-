@@ -1098,7 +1098,11 @@ const GameInterface = () => {
   };
 
   const handleFieldClick = (x, y, fieldData) => {
-    setSelectedField({ x, y, ...fieldData });
+    // Direkte Weiterleitung zum Raumhafen mit Koordinaten
+    setActiveTab('raumhafen');
+    
+    // Setze die Zielkoordinaten für verfügbare Flotten
+    setTargetCoordinates({ x, y });
   };
 
   const handlePositionChange = (newPosition) => {
