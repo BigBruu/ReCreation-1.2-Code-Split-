@@ -1376,7 +1376,7 @@ const GameInterface = () => {
                 {Object.keys(spaceportShips).length > 0 ? (
                   Object.entries(spaceportShips).map(([planetKey, planetData]) => (
                     <div key={planetKey} className="spaceport-planet">
-                      <h5>{planetData.planet_name} ({planetData.position.x}, {planetData.position.y})</h5>
+                      <h5>{planetData.planet_name} ({planetData.position.x}:{planetData.position.y})</h5>
                       <div className="spaceport-ships-list">
                         {planetData.ships.map(ship => (
                           <div key={ship.id} className="spaceport-ship">
