@@ -940,7 +940,9 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
         {hasFleets && (
           <div className="fleet-indicator">
             {fleets.map((fleet, i) => (
-              <div key={i} className="fleet-icon">🚀</div>
+              <div key={i} className="fleet-icon" title={`${fleet.name}${fleet.movement_end_time ? ' (bewegend)' : ''}`}>
+                {fleet.name}{fleet.movement_end_time ? '*' : ''}
+              </div>
             ))}
           </div>
         )}
