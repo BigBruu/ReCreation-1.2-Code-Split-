@@ -330,20 +330,18 @@ class TheReCreationAPITester:
         return result1 and result2
 
 def main():
-    print("🚀 Starting TheReCreation API Tests")
-    print("=" * 50)
+    print("🚀 Starting TheReCreation Observatory & Fleet API Tests")
+    print("=" * 60)
     
     tester = TheReCreationAPITester()
     
     # Run authentication tests
     print("\n📝 Authentication Tests:")
     if not tester.test_user_registration():
-        print("❌ Registration failed, stopping tests")
-        return 1
-    
-    if not tester.test_user_login():
-        print("❌ Login failed, stopping tests")
-        return 1
+        print("❌ Registration failed, trying login with existing user")
+        if not tester.test_user_login():
+            print("❌ Login also failed, stopping tests")
+            return 1
     
     if not tester.test_get_user_profile():
         print("❌ Profile fetch failed, stopping tests")
@@ -352,26 +350,30 @@ def main():
     # Run game state tests
     print("\n🎮 Game State Tests:")
     tester.test_game_state()
-    tester.test_game_field()
+    tester.test_user_spaceport()
     tester.test_rankings()
     
-    # Run game mechanics tests
-    print("\n🏗️ Game Mechanics Tests:")
-    if tester.test_create_colony():
-        tester.test_get_colonies()
-        
-        if tester.test_create_ship():
-            tester.test_get_ships()
-            tester.test_move_ship()
+    # Run Observatory API tests (main focus)
+    print("\n🔭 Observatory API Tests:")
+    tester.test_observatory_api()
     
-    tester.test_process_tick()
+    # Run Fleet API tests (main focus)
+    print("\n🚀 Fleet API Tests:")
+    tester.test_fleet_apis()
+    tester.test_fleet_movement_errors()
+    
+    # Run authentication and security tests
+    print("\n🔒 Authentication & Security Tests:")
+    tester.test_authentication_required()
     
     # Run error handling tests
     print("\n🔍 Error Handling Tests:")
     tester.test_invalid_endpoints()
     
+    tester.test_process_tick()
+    
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print(f"📊 Test Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
