@@ -935,7 +935,7 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
         onClick={() => onFieldClick(x, y, fieldData)}
         title={`(${x},${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''}`}
       >
-        <div className="field-coordinates">{x},{y}</div>
+        <div className="field-coordinates">{x}:{y}</div>
         {planetIcon}
         {hasFleets && (
           <div className="fleet-indicator">
