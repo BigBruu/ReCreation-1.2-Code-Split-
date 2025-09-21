@@ -933,7 +933,7 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
         key={key}
         className={`observatory-field ${planet ? 'has-planet' : 'empty'} ${hasFleets ? 'has-fleets' : ''}`}
         onClick={() => onFieldClick(x, y, fieldData)}
-        title={`(${x},${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''}`}
+        title={`(${x}:${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''}`}
       >
         <div className="field-coordinates">{x}:{y}</div>
         {planetIcon}
