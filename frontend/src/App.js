@@ -928,12 +928,17 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
 
     const hasFleets = fleets.length > 0;
 
+    // Check if this is the center field
+    const centerX = Math.floor(centerPosition.x);
+    const centerY = Math.floor(centerPosition.y);
+    const isCenter = x === centerX && y === centerY;
+
     return (
       <div
         key={key}
-        className={`observatory-field ${planet ? 'has-planet' : 'empty'} ${hasFleets ? 'has-fleets' : ''}`}
+        className={`observatory-field ${planet ? 'has-planet' : 'empty'} ${hasFleets ? 'has-fleets' : ''} ${isCenter ? 'center-field' : ''}`}
         onClick={() => onFieldClick(x, y, fieldData)}
-        title={`(${x}:${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''}`}
+        title={`(${x}:${y}) ${planet ? planet.name : 'Leerer Raum'} ${hasFleets ? `- ${fleets.length} Flotte(n)` : ''} ${isCenter ? ' [ZENTRUM]' : ''}`}
       >
         <div className="field-coordinates">{x}:{y}</div>
         {planetIcon}
