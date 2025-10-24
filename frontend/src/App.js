@@ -1528,6 +1528,7 @@ const GameInterface = () => {
                             max="46"
                             id={`fleet-${fleet.id}-x`}
                             className="coordinate-input"
+                            key={`${fleet.id}-x-${targetCoordinates?.x || 'empty'}`}
                             defaultValue={targetCoordinates?.x || ''}
                           />
                           <span>:</span>
@@ -1538,6 +1539,7 @@ const GameInterface = () => {
                             max="46"
                             id={`fleet-${fleet.id}-y`}
                             className="coordinate-input"
+                            key={`${fleet.id}-y-${targetCoordinates?.y || 'empty'}`}
                             defaultValue={targetCoordinates?.y || ''}
                           />
                           <button
