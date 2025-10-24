@@ -965,14 +965,38 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
     <div className="observatory-container">
       <div className="observatory-header">
         <h3>Observatorium</h3>
-        <div className="observatory-nav">
-          <button onClick={() => handleNavigation('up')}>↑</button>
-          <div>
-            <button onClick={() => handleNavigation('left')}>←</button>
-            <span className="coordinates">({centerPosition.x}:{centerPosition.y})</span>
-            <button onClick={() => handleNavigation('right')}>→</button>
+        <div className="observatory-controls">
+          <div className="fleet-selector">
+            <label>Zu Flotte springen:</label>
+            <select 
+              onChange={(e) => {
+                if (e.target.value) {
+                  const fleet = userFleets.find(f => f.id === e.target.value);
+                  if (fleet) {
+                    onPositionChange({ x: fleet.position.x, y: fleet.position.y });
+                  }
+                }
+              }}
+              value=""
+              className="fleet-select"
+            >
+              <option value="">Flotte wählen...</option>
+              {userFleets.map(fleet => (
+                <option key={fleet.id} value={fleet.id}>
+                  {fleet.name} ({fleet.position.x}:{fleet.position.y}){fleet.movement_end_time ? '*' : ''}
+                </option>
+              ))}
+            </select>
           </div>
-          <button onClick={() => handleNavigation('down')}>↓</button>
+          <div className="observatory-nav">
+            <button onClick={() => handleNavigation('up')}>↑</button>
+            <div>
+              <button onClick={() => handleNavigation('left')}>←</button>
+              <span className="coordinates">({centerPosition.x}:{centerPosition.y})</span>
+              <button onClick={() => handleNavigation('right')}>→</button>
+            </div>
+            <button onClick={() => handleNavigation('down')}>↓</button>
+          </div>
         </div>
       </div>
       
