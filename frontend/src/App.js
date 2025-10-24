@@ -1598,6 +1598,8 @@ const GameInterface = () => {
               onPositionChange={handlePositionChange}
               view={observatoryView}
               onFieldClick={handleFieldClick}
+              userFleets={userFleets}
+              userPlanets={userPlanets}
             />
           )}
 
