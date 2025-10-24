@@ -189,6 +189,18 @@ Observatorium Verbesserungen:
         - agent: "testing"
         - comment: "TESTING COMPLETED: Fleet movement interface implementation appears correct in code. Found fleet movement controls in App.js with coordinate inputs (.coordinate-input class) and 'Bewegen' button. Cannot fully test without existing fleets, but the interface structure is properly implemented with input validation (0-46 range) and moveFleet function that calls the backend API."
 
+  - task: "Flotten-Auswahl im Observatorium zum Springen zu Flotten"
+    implemented: true
+    working: "NA"
+    file: "App.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "NEU HINZUGEFÜGT - Dropdown für Flotten-Auswahl im Observatorium. User kann jetzt zu jeder aktiven Flotte springen und die Flotte im mittleren Feld des 7x7 Grids sehen. Zusätzlich 'Raumhafen' Button zum Springen zum eigenen Raumhafen."
+
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
