@@ -143,11 +143,11 @@ Observatorium Verbesserungen:
 
   - task: "Klick-Navigation vom Observatorium zum Raumhafen"
     implemented: true
-    working: false
+    working: "NA"
     file: "App.js"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
         - working: "NA"
         - agent: "main"
@@ -155,6 +155,9 @@ Observatorium Verbesserungen:
         - working: false
         - agent: "testing"
         - comment: "TESTING COMPLETED: Click navigation from Observatory to Raumhafen works correctly - clicking on field (14:1) successfully redirected to Raumhafen tab. However, AUTO-FILL COORDINATES FEATURE IS NOT WORKING: No coordinate values were auto-filled in the Raumhafen input fields after clicking on Observatory field. The handleFieldClick function redirects correctly but the coordinate auto-fill functionality needs to be fixed."
+        - working: "NA"
+        - agent: "main"
+        - comment: "BEHOBEN: Auto-Fill Problem behoben durch setTimeout im useEffect und key-Attribut für Input-Felder Re-rendering. Input-Felder sollten jetzt korrekt mit Koordinaten gefüllt werden."
 
   - task: "Flotten-Status mit * für bewegende Flotten anzeigen"
     implemented: true
