@@ -1056,16 +1056,19 @@ const GameInterface = () => {
   // Auto-fill target coordinates when coming from Observatory
   useEffect(() => {
     if (targetCoordinates && activeTab === 'raumhafen') {
-      userFleets.forEach(fleet => {
-        if (!fleet.movement_end_time) {
-          const xInput = document.getElementById(`fleet-${fleet.id}-x`);
-          const yInput = document.getElementById(`fleet-${fleet.id}-y`);
-          if (xInput && yInput) {
-            xInput.value = targetCoordinates.x;
-            yInput.value = targetCoordinates.y;
+      // Use setTimeout to ensure DOM elements are rendered
+      setTimeout(() => {
+        userFleets.forEach(fleet => {
+          if (!fleet.movement_end_time) {
+            const xInput = document.getElementById(`fleet-${fleet.id}-x`);
+            const yInput = document.getElementById(`fleet-${fleet.id}-y`);
+            if (xInput && yInput) {
+              xInput.value = targetCoordinates.x;
+              yInput.value = targetCoordinates.y;
+            }
           }
-        }
-      });
+        });
+      }, 100); // Small delay to ensure DOM is ready
     }
   }, [targetCoordinates, activeTab, userFleets]);
 
