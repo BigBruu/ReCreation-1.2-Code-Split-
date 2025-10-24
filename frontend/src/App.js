@@ -987,6 +987,17 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) =
                 </option>
               ))}
             </select>
+            <button 
+              onClick={() => {
+                if (userPlanets.length > 0) {
+                  const spaceport = userPlanets[0]; // First planet is usually the spaceport
+                  onPositionChange({ x: spaceport.position.x, y: spaceport.position.y });
+                }
+              }}
+              className="btn-secondary spaceport-btn"
+            >
+              🚀 Raumhafen
+            </button>
           </div>
           <div className="observatory-nav">
             <button onClick={() => handleNavigation('up')}>↑</button>
