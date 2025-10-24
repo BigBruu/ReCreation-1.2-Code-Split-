@@ -198,8 +198,7 @@ Observatorium Verbesserungen:
 ## test_plan:
   current_focus:
     - "Klick-Navigation vom Observatorium zum Raumhafen"
-  stuck_tasks: 
-    - "Klick-Navigation vom Observatorium zum Raumhafen"
+  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
