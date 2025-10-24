@@ -122,11 +122,32 @@
 }
 
 .observatory-header {
-  @apply flex justify-between items-center mb-4;
+  @apply flex flex-col space-y-4 mb-4;
 }
 
 .observatory-header h3 {
   @apply text-xl font-bold text-blue-400;
+}
+
+.observatory-controls {
+  @apply flex flex-col lg:flex-row justify-between items-center space-y-2 lg:space-y-0;
+}
+
+.fleet-selector {
+  @apply flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4;
+}
+
+.fleet-selector label {
+  @apply text-sm text-gray-300 whitespace-nowrap;
+}
+
+.fleet-select {
+  @apply bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm min-w-48;
+  @apply focus:border-blue-400 focus:outline-none;
+}
+
+.spaceport-btn {
+  @apply px-3 py-2 text-sm whitespace-nowrap;
 }
 
 .observatory-nav {
