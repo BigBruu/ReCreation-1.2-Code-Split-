@@ -201,6 +201,11 @@
   @apply bg-black border-gray-800;
 }
 
+.observatory-field.center-field {
+  @apply ring-2 ring-yellow-400 ring-opacity-60;
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.3);
+}
+
 .field-coordinates {
   @apply absolute top-0 left-0 text-xs text-gray-500 p-1;
   font-size: 8px;
