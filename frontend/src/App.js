@@ -908,7 +908,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
 };
 
 // Observatory Component (7x7 View)
-const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick }) => {
+const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, userFleets = [], userPlanets = [] }) => {
   const renderField = (x, y) => {
     const key = `${x},${y}`;
     const fieldData = view[key] || { planet: null, fleets: [] };
