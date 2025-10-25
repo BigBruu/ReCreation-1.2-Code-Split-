@@ -1424,6 +1424,42 @@ async def manual_tick():
     await process_tick()
     return {"message": "Tick processed successfully"}
 
+# Global variable to track automatic tick task
+automatic_tick_task = None
+
+async def automatic_tick_system():
+    """Automatic tick processing system"""
+    while True:
+        try:
+            config = await get_game_config()
+            tick_duration = config.tick_duration
+            
+            # Wait for the tick duration
+            await asyncio.sleep(tick_duration)
+            
+            # Process the tick
+            await process_tick()
+            print(f"[TICK] Automatic tick processed at {datetime.utcnow()}")
+            
+        except Exception as e:
+            print(f"[ERROR] Automatic tick failed: {e}")
+            await asyncio.sleep(60)  # Wait 1 minute before retry
+
+async def start_automatic_tick_system():
+    """Start the automatic tick system"""
+    global automatic_tick_task
+    if automatic_tick_task is None or automatic_tick_task.done():
+        automatic_tick_task = asyncio.create_task(automatic_tick_system())
+        print("[TICK] Automatic tick system started")
+
+async def stop_automatic_tick_system():
+    """Stop the automatic tick system"""
+    global automatic_tick_task
+    if automatic_tick_task:
+        automatic_tick_task.cancel()
+        automatic_tick_task = None
+        print("[TICK] Automatic tick system stopped")
+
 # Include router
 app.include_router(api_router)
 
