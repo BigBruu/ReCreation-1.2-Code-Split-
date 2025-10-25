@@ -1496,6 +1496,10 @@ async def startup_event():
     # Initialize game config
     config = await init_game_config()
     logger.info(f"Game config: {config.max_players} max players, {config.universe_size}x{config.universe_size} universe")
+    
+    # Start automatic tick system
+    await start_automatic_tick_system()
+    logger.info(f"Automatic tick system started with {config.tick_duration}s interval")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
