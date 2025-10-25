@@ -103,11 +103,14 @@
 #====================================================================================================
 
 ## user_problem_statement: 
-Observatorium Verbesserungen: 
-1. Koordinaten-Format von (0,0) zu (0:0) ändern
-2. Bei Klick auf Feld im 7x7 Raster → Weiterleitung zum Raumhafen mit automatischer Koordinaten-Eingabe
-3. Planet-Information: Nur vorhandene Rohstoffe anzeigen
-4. Flotten-Status: Stehende Flotte "Flotte 1", bewegende Flotte "Flotte 1*"
+KRITISCHES PROBLEM: Tick-System funktioniert nicht! 
+Das automatische Tick-System (jede Minute) läuft nicht korrekt. Rohstoffabbau, Forschung, Flottenbewegungen werden nicht automatisch verarbeitet. User meldet dass Tickdauer auf 0:00 steht aber keine automatische Verarbeitung stattfindet.
+
+Vorherige Observatorium Verbesserungen (ABGESCHLOSSEN): 
+1. Koordinaten-Format von (0,0) zu (0:0) ändern ✅
+2. Bei Klick auf Feld im 7x7 Raster → Weiterleitung zum Raumhafen mit automatischer Koordinaten-Eingabe ✅
+3. Planet-Information: Nur vorhandene Rohstoffe anzeigen ✅
+4. Flotten-Status: Stehende Flotte "Flotte 1", bewegende Flotte "Flotte 1*" ✅
 
 ## backend:
   - task: "Observatory API für Klick-Navigation erweitern"
