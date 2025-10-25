@@ -1503,4 +1503,6 @@ async def startup_event():
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    await stop_automatic_tick_system()
     client.close()
+    logger.info("TheCreation server shutdown complete")
