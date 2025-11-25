@@ -131,6 +131,21 @@ Vorherige Observatorium Verbesserungen (ABGESCHLOSSEN):
         - agent: "testing"
         - comment: "BACKEND VERIFICATION COMPLETED: Ran comprehensive verification test as requested. All 21 backend tests passed (21/21). Observatory API returns proper 7x7 grid data for all scenarios. Fleet Movement API handles movement timing, fleet creation, and error handling correctly. Authentication properly enforced with 401/403 for unauthorized requests. Backend is stable and production-ready."
 
+  - task: "Automatisches Tick-System implementieren und testen"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Automatisches Tick-System implementiert mit automatic_tick_system(), start_automatic_tick_system() und process_tick() Funktionen. System läuft alle 60 Sekunden und verarbeitet Rohstoffabbau, Forschung und Flottenbewegungen automatisch."
+        - working: true
+        - agent: "testing"
+        - comment: "AUTOMATIC TICK SYSTEM TESTING COMPLETED: ✅ Game State API (/api/game/state) working correctly - returns current_tick, last_tick_time, next_tick_time with proper 60s intervals. ✅ Manual Tick API (/api/game/tick) working correctly - processes tick and increments current_tick. ✅ Automatic Tick Processing verified - monitored system for 70 seconds and confirmed automatic tick increment from 76->77 with proper timestamp updates. ✅ Resource Processing verified - detected resource changes during tick processing (Food: 28850124->28850114, Metal: 48083540->48063313). ✅ Backend logs confirm automatic tick system running: '[TICK] Automatic tick processed at 2025-11-25 16:47:20.365687'. All 5/5 tick system tests passed. The automatic tick system is fully functional and processing game state updates every 60 seconds as configured."
+
 ## frontend:
   - task: "Koordinaten-Format von (0,0) zu (0:0) ändern"
     implemented: true
