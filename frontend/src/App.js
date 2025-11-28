@@ -918,10 +918,31 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
     if (planet) {
       const planetClass = `planet-${planet.planet_type}`;
       const isOwned = planet.owner_username;
+      
+      // Calculate total resources
+      const totalResources = planet.resources.food + planet.resources.metal + 
+                            planet.resources.silicon + planet.resources.hydrogen;
+      
+      // Calculate a "fullness" percentage (assuming max ~1M per resource type)
+      const maxCapacity = 4000000; // 1M per resource type * 4
+      const fillPercentage = Math.min(100, Math.floor((totalResources / maxCapacity) * 100));
+      
+      // Show dominant resource
+      const dominantResource = Math.max(
+        planet.resources.food,
+        planet.resources.metal, 
+        planet.resources.silicon,
+        planet.resources.hydrogen
+      );
+      
       planetIcon = (
         <div className={`planet ${planetClass} ${isOwned ? 'owned' : ''}`}>
           <div className="planet-name">{planet.name}</div>
           {isOwned && <div className="planet-owner">{planet.owner_username}</div>}
+          <div className="planet-stats">
+            <div className="planet-percentage">Übern.:{fillPercentage}%</div>
+            <div className="planet-resources">{dominantResource.toLocaleString()}</div>
+          </div>
         </div>
       );
     }
