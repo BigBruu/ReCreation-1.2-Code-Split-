@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 import time
 
 class TickSystemTester:
-    def __init__(self, base_url="https://therecreation-game.preview.emergentagent.com"):
+    def __init__(self, base_url="https://galaxy-observatory.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.token = None
