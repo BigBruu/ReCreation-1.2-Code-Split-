@@ -1389,9 +1389,9 @@ const GameInterface = () => {
       <div className="game-header authentic-header">
         <div className="header-left">
           <div className="game-info">
-            <div>Uhrzeit: {new Date().toLocaleString('de-DE')}</div>
+            <div>Uhrzeit: {gameState?.last_tick_time ? new Date(gameState.last_tick_time).toLocaleString('de-DE') : new Date().toLocaleString('de-DE')}</div>
             <div>nexttick: {gameState?.next_tick_time ? new Date(gameState.next_tick_time).toLocaleString('de-DE') : 'Lade...'}</div>
-            <div>Tickdauer: {formatNextTick()}</div>
+            <div>Tickdauer: {formatTickDuration()}</div>
           </div>
         </div>
         
