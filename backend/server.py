@@ -973,7 +973,13 @@ async def get_admin_stats(credentials: HTTPAuthorizationCredentials = Depends(se
 @api_router.get("/game/state")
 async def get_game_state():
     game_state = await init_game_state()
-    return game_state
+    config = await get_game_config()
+    
+    # Return game state with tick_duration from config
+    state_dict = game_state.dict()
+    state_dict['tick_duration'] = config.tick_duration
+    
+    return state_dict
 
 @api_router.post("/game/observatory")
 async def get_observatory_view(view_data: ObservatoryView, current_user: User = Depends(get_current_user)):
