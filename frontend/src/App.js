@@ -1258,6 +1258,15 @@ const GameInterface = () => {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const formatTickDuration = () => {
+    // Show configured tick duration from game config
+    if (!gameState?.tick_duration) return '0:00';
+    const duration = gameState.tick_duration; // in seconds
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   const calculateResearchCost = (baseCost, currentLevel) => {
     const reductionFactor = Math.pow(0.85, currentLevel); // 15% reduction per level
     return Math.floor(baseCost * reductionFactor * (currentLevel + 1));
