@@ -337,6 +337,23 @@
   @apply bg-gray-800 p-4 rounded border border-gray-700;
 }
 
+.component-row {
+  @apply flex flex-wrap gap-4 items-center mt-2;
+}
+
+.component-input-group {
+  @apply flex flex-col gap-1;
+}
+
+.component-input-group label {
+  @apply text-xs text-gray-400;
+}
+
+.component-input-group select,
+.component-input-group input[type="number"] {
+  @apply bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm;
+}
+
 .component-section h4 {
   @apply text-lg font-semibold text-blue-400 mb-2;
 }
