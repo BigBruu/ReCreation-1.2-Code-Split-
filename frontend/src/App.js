@@ -680,15 +680,15 @@ const AdminPanel = () => {
   );
 };
 
-// Ship Design Calculator (Rechner)
-const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
+// Ship Design Calculator (Rechner) - IMPROVED WITH RESEARCH-BASED DROPDOWNS
+const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }) => {
   const [design, setDesign] = useState({
     name: '',
     drive_type: 'segel',
     drive_level: 1,
     drive_quantity: 88,
     shield_type: 'quarz',
-    shield_level: 6,
+    shield_level: 1,
     shield_quantity: 110,
     weapon_type: 'laser',
     weapon_level: 1,
@@ -705,6 +705,15 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
     build_cost: { food: 0, metal: 0, silicon: 0, hydrogen: 0 },
     build_time_ticks: 0
   });
+
+  // Get max researched level for a component type
+  const getMaxResearchedLevel = (category, technology) => {
+    if (!userResearch?.research_levels) return 0;
+    const tech = userResearch.research_levels.find(
+      t => t.category === category && t.technology === technology
+    );
+    return tech ? tech.level : 0;
+  };
 
   // Recalculate stats when design changes
   useEffect(() => {
@@ -797,49 +806,124 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels }) => {
               />
             </div>
 
+            {/* ANTRIEB - with research-based dropdowns */}
             <div className="component-section">
               <h4>Antrieb:</h4>
-              <select value={design.drive_type} onChange={(e) => setDesign({...design, drive_type: e.target.value})}>
-                {componentLevels?.drives && Object.keys(componentLevels.drives).map(type => (
-                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                ))}
-              </select>
-              <span>(L{design.drive_level})</span>
-              <input type="number" min="1" max="7" value={design.drive_level} 
-                     onChange={(e) => setDesign({...design, drive_level: parseInt(e.target.value)})} />
-              <span>Anzahl:</span>
-              <input type="number" min="1" value={design.drive_quantity}
-                     onChange={(e) => setDesign({...design, drive_quantity: parseInt(e.target.value)})} />
+              <div className="component-row">
+                <div className="component-input-group">
+                  <label>Typ:</label>
+                  <select value={design.drive_type} onChange={(e) => setDesign({...design, drive_type: e.target.value, drive_level: 1})}>
+                    {componentLevels?.drives && Object.keys(componentLevels.drives).map(type => {
+                      const maxLevel = getMaxResearchedLevel('drives', type);
+                      return (
+                        <option key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Level:</label>
+                  <select 
+                    value={design.drive_level} 
+                    onChange={(e) => setDesign({...design, drive_level: parseInt(e.target.value)})}
+                  >
+                    {Array.from({length: getMaxResearchedLevel('drives', design.drive_type) || 1}, (_, i) => i + 1).map(level => (
+                      <option key={level} value={level}>L{level}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Anzahl:</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={design.drive_quantity}
+                    onChange={(e) => setDesign({...design, drive_quantity: parseInt(e.target.value)})} 
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* SCHILD - with research-based dropdowns */}
             <div className="component-section">
               <h4>Schild:</h4>
-              <select value={design.shield_type} onChange={(e) => setDesign({...design, shield_type: e.target.value})}>
-                {componentLevels?.shields && Object.keys(componentLevels.shields).map(type => (
-                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                ))}
-              </select>
-              <span>(L{design.shield_level})</span>
-              <input type="number" min="1" max="6" value={design.shield_level}
-                     onChange={(e) => setDesign({...design, shield_level: parseInt(e.target.value)})} />
-              <span>Anzahl:</span>
-              <input type="number" min="1" value={design.shield_quantity}
-                     onChange={(e) => setDesign({...design, shield_quantity: parseInt(e.target.value)})} />
+              <div className="component-row">
+                <div className="component-input-group">
+                  <label>Typ:</label>
+                  <select value={design.shield_type} onChange={(e) => setDesign({...design, shield_type: e.target.value, shield_level: 1})}>
+                    {componentLevels?.shields && Object.keys(componentLevels.shields).map(type => {
+                      const maxLevel = getMaxResearchedLevel('shields', type);
+                      return (
+                        <option key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Level:</label>
+                  <select 
+                    value={design.shield_level} 
+                    onChange={(e) => setDesign({...design, shield_level: parseInt(e.target.value)})}
+                  >
+                    {Array.from({length: getMaxResearchedLevel('shields', design.shield_type) || 1}, (_, i) => i + 1).map(level => (
+                      <option key={level} value={level}>L{level}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Anzahl:</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={design.shield_quantity}
+                    onChange={(e) => setDesign({...design, shield_quantity: parseInt(e.target.value)})} 
+                  />
+                </div>
+              </div>
             </div>
 
+            {/* WAFFE - with research-based dropdowns */}
             <div className="component-section">
               <h4>Waffe:</h4>
-              <select value={design.weapon_type} onChange={(e) => setDesign({...design, weapon_type: e.target.value})}>
-                {componentLevels?.weapons && Object.keys(componentLevels.weapons).map(type => (
-                  <option key={type} value={type}>{type.charAt(0).toUpperCase() + type.slice(1)}</option>
-                ))}
-              </select>
-              <span>(L{design.weapon_level})</span>
-              <input type="number" min="1" max="6" value={design.weapon_level}
-                     onChange={(e) => setDesign({...design, weapon_level: parseInt(e.target.value)})} />
-              <span>Anzahl:</span>
-              <input type="number" min="1" value={design.weapon_quantity}
-                     onChange={(e) => setDesign({...design, weapon_quantity: parseInt(e.target.value)})} />
+              <div className="component-row">
+                <div className="component-input-group">
+                  <label>Typ:</label>
+                  <select value={design.weapon_type} onChange={(e) => setDesign({...design, weapon_type: e.target.value, weapon_level: 1})}>
+                    {componentLevels?.weapons && Object.keys(componentLevels.weapons).map(type => {
+                      const maxLevel = getMaxResearchedLevel('weapons', type);
+                      return (
+                        <option key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Level:</label>
+                  <select 
+                    value={design.weapon_level} 
+                    onChange={(e) => setDesign({...design, weapon_level: parseInt(e.target.value)})}
+                  >
+                    {Array.from({length: getMaxResearchedLevel('weapons', design.weapon_type) || 1}, (_, i) => i + 1).map(level => (
+                      <option key={level} value={level}>L{level}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="component-input-group">
+                  <label>Anzahl:</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    value={design.weapon_quantity}
+                    onChange={(e) => setDesign({...design, weapon_quantity: parseInt(e.target.value)})} 
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="component-section">
