@@ -1091,14 +1091,8 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
               🚀 Raumhafen
             </button>
           </div>
-          <div className="observatory-nav">
-            <button onClick={() => handleNavigation('up')}>↑</button>
-            <div>
-              <button onClick={() => handleNavigation('left')}>←</button>
-              <span className="coordinates">({centerPosition.x}:{centerPosition.y})</span>
-              <button onClick={() => handleNavigation('right')}>→</button>
-            </div>
-            <button onClick={() => handleNavigation('down')}>↓</button>
+          <div className="current-coordinates">
+            ({centerPosition.x}:{centerPosition.y})
           </div>
         </div>
       </div>
