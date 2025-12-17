@@ -1097,10 +1097,21 @@ const GameInterface = () => {
   const [targetCoordinates, setTargetCoordinates] = useState(null);
   const [showShipCalculator, setShowShipCalculator] = useState(false);
 
+  // State for real-time clock updates
+  const [currentTime, setCurrentTime] = useState(new Date());
+
   useEffect(() => {
     fetchGameData();
     const interval = setInterval(fetchGameData, 15000); // Update every 15 seconds
     return () => clearInterval(interval);
+  }, []);
+
+  // Real-time clock update every second
+  useEffect(() => {
+    const clockInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(clockInterval);
   }, []);
 
   useEffect(() => {
