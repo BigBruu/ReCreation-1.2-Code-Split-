@@ -1283,7 +1283,7 @@ const GameInterface = () => {
   const formatNextTick = () => {
     if (!gameState?.next_tick_time) return 'Unbekannt';
     const nextTick = new Date(gameState.next_tick_time);
-    const now = new Date();
+    const now = currentTime; // Use real-time clock
     const diff = Math.max(0, Math.floor((nextTick - now) / 1000));
     const minutes = Math.floor(diff / 60);
     const seconds = diff % 60;
@@ -1297,6 +1297,11 @@ const GameInterface = () => {
     const minutes = Math.floor(duration / 60);
     const seconds = duration % 60;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  const formatCurrentTime = () => {
+    // Format current time in German locale
+    return currentTime.toLocaleString('de-DE');
   };
 
   const calculateResearchCost = (baseCost, currentLevel) => {
