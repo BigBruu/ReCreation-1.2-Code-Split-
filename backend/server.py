@@ -483,10 +483,15 @@ async def generate_universe():
     min_resources = config.min_planet_resources
     max_resources = config.max_planet_resources
     
+    # Map planet types to resource names
+    planet_type_to_name = {
+        "green": "Nahrung",
+        "blue": "Wasserstoff", 
+        "brown": "Metall",
+        "orange": "Silizium"
+    }
+    
     planets_to_create = []
-    planet_names = ["Kepler", "Proxima", "Gliese", "Wolf", "Trappist", "Ross", "Luyten", "Kapteyn", 
-                   "Barnard", "Vega", "Altair", "Sirius", "Rigel", "Betelgeuse", "Antares",
-                   "Anno1602", "Tanne", "Übern", "Yacu", "Fräse", "Lusankya", "Manticore"]
     
     # Generate planets based on universe size
     planet_count = int((universe_size * universe_size) * 0.08)  # ~8% of fields have planets
@@ -506,11 +511,15 @@ async def generate_universe():
         for resource in base_resources:
             base_resources[resource] = int(base_resources[resource] * resource_multiplier)
         
+        # Get planet name based on type
+        resource_name = planet_type_to_name[planet_type]
+        planet_number = random.randint(1000, 9999)
+        
         planet = {
             "id": str(uuid.uuid4()),
             "position": {"x": x, "y": y},
             "planet_type": planet_type,
-            "name": f"{random.choice(planet_names)}{random.randint(1000, 9999)}",
+            "name": f"{resource_name}{planet_number}",
             "resources": base_resources,
             "owner_id": None,
             "owner_username": None,
