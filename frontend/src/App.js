@@ -744,9 +744,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     const driveWeight = driveData.weight * design.drive_quantity;
     const shieldWeight = shieldData.weight * design.shield_quantity;
     const weaponWeight = weaponData.weight * design.weapon_quantity;
-    const miningWeight = componentLevels.mining?.abbaueinheit ? 
-      componentLevels.mining.abbaueinheit.weight * design.mining_units : 0;
-    const totalWeight = driveWeight + shieldWeight + weaponWeight + miningWeight;
+    const totalWeight = driveWeight + shieldWeight + weaponWeight;
 
     // Calculate speed
     const baseSpeed = driveData.speed_base * design.drive_level * design.drive_quantity;
@@ -757,19 +755,18 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     const defensePower = shieldData.defense_base * design.shield_level * design.shield_quantity;
     const combatValue = attackPower + defensePower;
 
-    // Calculate mining capacity
-    const miningCapacity = componentLevels.mining?.abbaueinheit ? 
-      componentLevels.mining.abbaueinheit.mining_base * design.mining_units : 0;
+    // Calculate mining capacity (if weapon is Abbaueinheit)
+    const miningCapacity = weaponData.mining_base ? 
+      weaponData.mining_base * design.weapon_level * design.weapon_quantity : 0;
 
     // Calculate build costs
-    const foodCost = 0; // No colony units anymore
-    const metalCost = (driveWeight + weaponWeight + miningWeight) * design.drive_level * 10;
+    const foodCost = 0;
+    const metalCost = (driveWeight + weaponWeight) * design.drive_level * 10;
     const siliconCost = (shieldWeight + weaponWeight) * design.shield_level * 5;
     const hydrogenCost = weaponWeight * design.weapon_level * 2;
 
     // Calculate build time
     let buildTime = Math.max(1, Math.floor(totalWeight / 100)) + design.drive_level + design.shield_level + design.weapon_level;
-    if (design.mining_units > 0) buildTime += design.mining_units * 2;
 
     setCalculatedStats({
       speed,
