@@ -1970,6 +1970,7 @@ const GameInterface = () => {
           onClose={() => setShowShipCalculator(false)}
           onSave={handleSaveShipDesign}
           componentLevels={componentLevels}
+          userResearch={userResearch}
         />
       )}
     </div>
