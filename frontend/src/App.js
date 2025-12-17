@@ -1697,7 +1697,6 @@ const GameInterface = () => {
                       <div>Antrieb: {design.drive.component_name} (L{design.drive.level}) x{design.drive.quantity}</div>
                       <div>Schild: {design.shield.component_name} (L{design.shield.level}) x{design.shield.quantity}</div>
                       <div>Waffe: {design.weapon.component_name} (L{design.weapon.level}) x{design.weapon.quantity}</div>
-                      {design.mining_units > 0 && <div>⛏️ Abbaueinheiten: {design.mining_units}</div>}
                       <div className="stats-row">
                         <span>Geschwindigkeit: {design.calculated_stats.speed} pc/tick</span>
                         <span>Kampfwert: {design.calculated_stats.combat_value}</span>
