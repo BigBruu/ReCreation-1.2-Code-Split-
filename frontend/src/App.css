@@ -354,6 +354,12 @@
   @apply bg-gray-700 border border-gray-600 rounded px-2 py-1 text-sm;
 }
 
+.level-display {
+  @apply bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm font-bold text-blue-400;
+  min-width: 50px;
+  text-align: center;
+}
+
 .component-section h4 {
   @apply text-lg font-semibold text-blue-400 mb-2;
 }
