@@ -680,18 +680,27 @@ const AdminPanel = () => {
   );
 };
 
-// Ship Design Calculator (Rechner) - IMPROVED WITH RESEARCH-BASED DROPDOWNS
+// Ship Design Calculator (Rechner) - AUTO MAX LEVEL
 const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }) => {
+  // Get max researched level for a component type
+  const getMaxResearchedLevel = (category, technology) => {
+    if (!userResearch?.research_levels) return 1;
+    const tech = userResearch.research_levels.find(
+      t => t.category === category && t.technology === technology
+    );
+    return tech ? Math.max(1, tech.level) : 1;
+  };
+
   const [design, setDesign] = useState({
     name: '',
     drive_type: 'segel',
-    drive_level: 1,
+    drive_level: getMaxResearchedLevel('drives', 'segel'),
     drive_quantity: 88,
     shield_type: 'quarz',
-    shield_level: 1,
+    shield_level: getMaxResearchedLevel('shields', 'quarz'),
     shield_quantity: 110,
     weapon_type: 'laser',
-    weapon_level: 1,
+    weapon_level: getMaxResearchedLevel('weapons', 'laser'),
     weapon_quantity: 10,
     mining_units: 0,
     colony_units: 0
@@ -706,13 +715,16 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     build_time_ticks: 0
   });
 
-  // Get max researched level for a component type
-  const getMaxResearchedLevel = (category, technology) => {
-    if (!userResearch?.research_levels) return 0;
-    const tech = userResearch.research_levels.find(
-      t => t.category === category && t.technology === technology
-    );
-    return tech ? tech.level : 0;
+  // Auto-update level when type changes
+  const handleTypeChange = (category, type) => {
+    const maxLevel = getMaxResearchedLevel(category, type);
+    if (category === 'drives') {
+      setDesign({...design, drive_type: type, drive_level: maxLevel});
+    } else if (category === 'shields') {
+      setDesign({...design, shield_type: type, shield_level: maxLevel});
+    } else if (category === 'weapons') {
+      setDesign({...design, weapon_type: type, weapon_level: maxLevel});
+    }
   };
 
   // Recalculate stats when design changes
@@ -806,33 +818,26 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               />
             </div>
 
-            {/* ANTRIEB - with research-based dropdowns */}
+            {/* ANTRIEB - Auto max level */}
             <div className="component-section">
               <h4>Antrieb:</h4>
               <div className="component-row">
                 <div className="component-input-group">
                   <label>Typ:</label>
-                  <select value={design.drive_type} onChange={(e) => setDesign({...design, drive_type: e.target.value, drive_level: 1})}>
+                  <select value={design.drive_type} onChange={(e) => handleTypeChange('drives', e.target.value)}>
                     {componentLevels?.drives && Object.keys(componentLevels.drives).map(type => {
                       const maxLevel = getMaxResearchedLevel('drives', type);
                       return (
                         <option key={type} value={type}>
-                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
                     })}
                   </select>
                 </div>
                 <div className="component-input-group">
-                  <label>Level:</label>
-                  <select 
-                    value={design.drive_level} 
-                    onChange={(e) => setDesign({...design, drive_level: parseInt(e.target.value)})}
-                  >
-                    {Array.from({length: getMaxResearchedLevel('drives', design.drive_type) || 1}, (_, i) => i + 1).map(level => (
-                      <option key={level} value={level}>L{level}</option>
-                    ))}
-                  </select>
+                  <label>Level (automatisch):</label>
+                  <div className="level-display">L{design.drive_level}</div>
                 </div>
                 <div className="component-input-group">
                   <label>Anzahl:</label>
@@ -846,33 +851,26 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               </div>
             </div>
 
-            {/* SCHILD - with research-based dropdowns */}
+            {/* SCHILD - Auto max level */}
             <div className="component-section">
               <h4>Schild:</h4>
               <div className="component-row">
                 <div className="component-input-group">
                   <label>Typ:</label>
-                  <select value={design.shield_type} onChange={(e) => setDesign({...design, shield_type: e.target.value, shield_level: 1})}>
+                  <select value={design.shield_type} onChange={(e) => handleTypeChange('shields', e.target.value)}>
                     {componentLevels?.shields && Object.keys(componentLevels.shields).map(type => {
                       const maxLevel = getMaxResearchedLevel('shields', type);
                       return (
                         <option key={type} value={type}>
-                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
                     })}
                   </select>
                 </div>
                 <div className="component-input-group">
-                  <label>Level:</label>
-                  <select 
-                    value={design.shield_level} 
-                    onChange={(e) => setDesign({...design, shield_level: parseInt(e.target.value)})}
-                  >
-                    {Array.from({length: getMaxResearchedLevel('shields', design.shield_type) || 1}, (_, i) => i + 1).map(level => (
-                      <option key={level} value={level}>L{level}</option>
-                    ))}
-                  </select>
+                  <label>Level (automatisch):</label>
+                  <div className="level-display">L{design.shield_level}</div>
                 </div>
                 <div className="component-input-group">
                   <label>Anzahl:</label>
@@ -886,33 +884,26 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               </div>
             </div>
 
-            {/* WAFFE - with research-based dropdowns */}
+            {/* WAFFE - Auto max level */}
             <div className="component-section">
               <h4>Waffe:</h4>
               <div className="component-row">
                 <div className="component-input-group">
                   <label>Typ:</label>
-                  <select value={design.weapon_type} onChange={(e) => setDesign({...design, weapon_type: e.target.value, weapon_level: 1})}>
+                  <select value={design.weapon_type} onChange={(e) => handleTypeChange('weapons', e.target.value)}>
                     {componentLevels?.weapons && Object.keys(componentLevels.weapons).map(type => {
                       const maxLevel = getMaxResearchedLevel('weapons', type);
                       return (
                         <option key={type} value={type}>
-                          {type.charAt(0).toUpperCase() + type.slice(1)} (L{maxLevel})
+                          {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
                     })}
                   </select>
                 </div>
                 <div className="component-input-group">
-                  <label>Level:</label>
-                  <select 
-                    value={design.weapon_level} 
-                    onChange={(e) => setDesign({...design, weapon_level: parseInt(e.target.value)})}
-                  >
-                    {Array.from({length: getMaxResearchedLevel('weapons', design.weapon_type) || 1}, (_, i) => i + 1).map(level => (
-                      <option key={level} value={level}>L{level}</option>
-                    ))}
-                  </select>
+                  <label>Level (automatisch):</label>
+                  <div className="level-display">L{design.weapon_level}</div>
                 </div>
                 <div className="component-input-group">
                   <label>Anzahl:</label>
