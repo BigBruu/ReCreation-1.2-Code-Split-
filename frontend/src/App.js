@@ -762,7 +762,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
       componentLevels.mining.abbaueinheit.mining_base * design.mining_units : 0;
 
     // Calculate build costs
-    const foodCost = colonyWeight * 4;
+    const foodCost = 0; // No colony units anymore
     const metalCost = (driveWeight + weaponWeight + miningWeight) * design.drive_level * 10;
     const siliconCost = (shieldWeight + weaponWeight) * design.shield_level * 5;
     const hydrogenCost = weaponWeight * design.weapon_level * 2;
@@ -770,7 +770,6 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     // Calculate build time
     let buildTime = Math.max(1, Math.floor(totalWeight / 100)) + design.drive_level + design.shield_level + design.weapon_level;
     if (design.mining_units > 0) buildTime += design.mining_units * 2;
-    if (design.colony_units > 0) buildTime += design.colony_units * 5;
 
     setCalculatedStats({
       speed,
