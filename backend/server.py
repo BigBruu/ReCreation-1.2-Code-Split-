@@ -314,7 +314,8 @@ RESEARCH_BASE_COSTS = {
         "laser": {"base_cost": 500000, "base_time_hours": 18},
         "konventionell": {"base_cost": 25000, "base_time_hours": 4},
         "emp": {"base_cost": 1500000, "base_time_hours": 36},
-        "plasma": {"base_cost": 7500000, "base_time_hours": 60}
+        "plasma": {"base_cost": 7500000, "base_time_hours": 60},
+        "abbaueinheit": {"base_cost": 50000, "base_time_hours": 8}
     }
 }
 
