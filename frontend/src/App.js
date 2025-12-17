@@ -1080,19 +1080,19 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
       <div className="observatory-legend">
         <div className="legend-item">
           <div className="planet planet-green"></div>
-          <span>Grüner Planet</span>
+          <span>Nahrung</span>
         </div>
         <div className="legend-item">
           <div className="planet planet-blue"></div>
-          <span>Blauer Planet</span>
+          <span>Wasserstoff</span>
         </div>
         <div className="legend-item">
           <div className="planet planet-brown"></div>
-          <span>Brauner Planet</span>
+          <span>Metall</span>
         </div>
         <div className="legend-item">
           <div className="planet planet-orange"></div>
-          <span>Oranger Planet</span>
+          <span>Silizium</span>
         </div>
       </div>
     </div>
