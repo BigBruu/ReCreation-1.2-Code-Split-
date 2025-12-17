@@ -701,8 +701,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     shield_quantity: 110,
     weapon_type: 'laser',
     weapon_level: getMaxResearchedLevel('weapons', 'laser'),
-    weapon_quantity: 10,
-    mining_units: 0
+    weapon_quantity: 10
   });
 
   const [calculatedStats, setCalculatedStats] = useState({
