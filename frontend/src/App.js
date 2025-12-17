@@ -1717,7 +1717,6 @@ const GameInterface = () => {
                       <div>Schild: {design.shield.component_name} (L{design.shield.level}) x{design.shield.quantity}</div>
                       <div>Waffe: {design.weapon.component_name} (L{design.weapon.level}) x{design.weapon.quantity}</div>
                       {design.mining_units > 0 && <div>⛏️ Abbaueinheiten: {design.mining_units}</div>}
-                      {design.colony_units > 0 && <div>🏭 Kolonieeinheiten: {design.colony_units}</div>}
                       <div className="stats-row">
                         <span>Geschwindigkeit: {design.calculated_stats.speed} pc/tick</span>
                         <span>Kampfwert: {design.calculated_stats.combat_value}</span>
