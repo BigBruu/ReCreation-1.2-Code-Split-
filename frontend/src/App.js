@@ -927,21 +927,6 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
                 (Summe aller Schiffe = Abbaukapazität/Tick)
               </span>
             </div>
-
-            <div className="component-section">
-              <h4>🏭 Kolonieeinheiten:</h4>
-              <span>Anzahl:</span>
-              <input 
-                type="number" 
-                min="0" 
-                max="10" 
-                value={design.colony_units}
-                onChange={(e) => setDesign({...design, colony_units: parseInt(e.target.value)})} 
-              />
-              <span className="text-xs text-gray-400">
-                (Für Planetenkolonisierung)
-              </span>
-            </div>
           </div>
 
           <div className="calculated-stats">
