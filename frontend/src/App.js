@@ -908,21 +908,6 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
                 </div>
               </div>
             </div>
-
-            <div className="component-section">
-              <h4>⛏️ Abbaueinheiten:</h4>
-              <span>Anzahl:</span>
-              <input 
-                type="number" 
-                min="0" 
-                max="100" 
-                value={design.mining_units}
-                onChange={(e) => setDesign({...design, mining_units: parseInt(e.target.value)})} 
-              />
-              <span className="text-xs text-gray-400">
-                (Summe aller Schiffe = Abbaukapazität/Tick)
-              </span>
-            </div>
           </div>
 
           <div className="calculated-stats">
