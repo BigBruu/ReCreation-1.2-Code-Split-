@@ -244,8 +244,6 @@ class CreateShipDesign(BaseModel):
     weapon_type: str
     weapon_level: int
     weapon_quantity: int
-    mining_units: Optional[int] = 0  # Number of mining units
-    colony_units: Optional[int] = 0  # Number of colony units
 
 class BuildFleet(BaseModel):
     planet_id: str
