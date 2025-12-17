@@ -133,6 +133,10 @@
   @apply flex flex-col lg:flex-row justify-between items-center space-y-2 lg:space-y-0;
 }
 
+.current-coordinates {
+  @apply text-lg font-bold text-blue-400 bg-gray-800 px-4 py-2 rounded border border-blue-500;
+}
+
 .fleet-selector {
   @apply flex flex-col lg:flex-row items-center space-y-2 lg:space-y-0 lg:space-x-4;
 }
