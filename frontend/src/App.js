@@ -746,9 +746,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
     const weaponWeight = weaponData.weight * design.weapon_quantity;
     const miningWeight = componentLevels.mining?.abbaueinheit ? 
       componentLevels.mining.abbaueinheit.weight * design.mining_units : 0;
-    const colonyWeight = componentLevels.special?.kolonieeinheit ? 
-      componentLevels.special.kolonieeinheit.weight * design.colony_units : 0;
-    const totalWeight = driveWeight + shieldWeight + weaponWeight + miningWeight + colonyWeight;
+    const totalWeight = driveWeight + shieldWeight + weaponWeight + miningWeight;
 
     // Calculate speed
     const baseSpeed = driveData.speed_base * design.drive_level * design.drive_quantity;
