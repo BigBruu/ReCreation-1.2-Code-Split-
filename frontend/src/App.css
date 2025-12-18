@@ -838,3 +838,81 @@
 .move-fleet-btn {
   @apply px-3 py-1 text-sm;
 }
+
+/* Research Styles - Grid Layout */
+.research-content {
+  @apply p-6;
+}
+
+.research-content h3 {
+  @apply text-2xl font-bold text-blue-400 mb-6;
+}
+
+.research-categories {
+  @apply space-y-8;
+}
+
+.research-category h4 {
+  @apply text-xl font-semibold text-white mb-4;
+}
+
+.research-techs {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.research-tech {
+  @apply bg-gray-800 p-4 rounded border border-gray-700;
+  @apply hover:border-blue-500 transition-colors;
+}
+
+.tech-header {
+  @apply flex justify-between items-center mb-2;
+}
+
+.tech-name {
+  @apply font-semibold text-white;
+}
+
+.tech-level {
+  @apply text-sm text-blue-400 bg-blue-900 px-2 py-1 rounded;
+}
+
+.tech-details {
+  @apply space-y-1 mb-3;
+}
+
+.tech-cost {
+  @apply text-sm text-gray-400;
+}
+
+.tech-reduction {
+  @apply text-xs text-green-400;
+}
+
+.research-btn {
+  @apply w-full;
+}
+
+.research-progress {
+  @apply bg-blue-900 p-2 rounded text-center;
+}
+
+.researching-indicator {
+  @apply text-sm font-semibold text-blue-300;
+}
+
+.research-time {
+  @apply text-xs text-gray-400 mt-1;
+}
+
+.research-info {
+  @apply mt-6 bg-gray-800 p-4 rounded border border-gray-700;
+}
+
+.research-info h4 {
+  @apply text-lg font-semibold text-blue-400 mb-2;
+}
+
+.research-info ul {
+  @apply space-y-1 text-sm text-gray-300;
+}
