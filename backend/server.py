@@ -492,15 +492,14 @@ async def generate_universe():
         for resource in base_resources:
             base_resources[resource] = int(base_resources[resource] * resource_multiplier)
         
-        # Get planet name based on type
+        # Get planet name based on type (no numbers!)
         resource_name = planet_type_to_name[planet_type]
-        planet_number = random.randint(1000, 9999)
         
         planet = {
             "id": str(uuid.uuid4()),
             "position": {"x": x, "y": y},
             "planet_type": planet_type,
-            "name": f"{resource_name}{planet_number}",
+            "name": resource_name,
             "resources": base_resources,
             "owner_id": None,
             "owner_username": None,
