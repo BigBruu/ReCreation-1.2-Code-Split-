@@ -805,6 +805,13 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
       alert('Bitte geben Sie einen Namen für den Prototyp ein');
       return;
     }
+    
+    // Check if any component is selected
+    if (!design.drive_type || !design.shield_type || !design.weapon_type) {
+      alert('Bitte erforschen Sie zuerst Technologien in der Forschung!');
+      return;
+    }
+    
     onSave(design);
   };
 
