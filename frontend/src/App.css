@@ -927,3 +927,20 @@
 .research-info ul {
   @apply space-y-1 text-sm text-gray-300;
 }
+
+/* No Research Warning */
+.no-research-warning {
+  @apply bg-yellow-900 border border-yellow-600 p-6 rounded text-center;
+}
+
+.no-research-warning h4 {
+  @apply text-xl font-bold text-yellow-400 mb-3;
+}
+
+.no-research-warning p {
+  @apply text-gray-200 mb-2;
+}
+
+.no-research-warning ul {
+  @apply text-left inline-block text-gray-300 space-y-1;
+}
