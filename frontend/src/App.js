@@ -979,6 +979,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
             </table>
           </div>
         </div>
+          )}
 
         <div className="calculator-actions">
           <button onClick={handleSave} className="btn-primary">Prototyp speichern</button>
