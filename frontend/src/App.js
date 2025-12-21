@@ -1060,6 +1060,16 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
       </div>
       
       <div className="observatory-grid">
+        {/* Column headers (X-axis) */}
+        <div className="observatory-row">
+          <div className="axis-label"></div>
+          {Array.from({ length: 7 }, (_, col) => {
+            const x = centerPosition.x - 3 + col;
+            return <div key={col} className="col-label">{x}</div>;
+          })}
+        </div>
+        
+        {/* Grid with Y-axis labels */}
         {Array.from({ length: 7 }, (_, row) => {
           const y = centerPosition.y - 3 + row; // -3 to +3
           return (
