@@ -824,6 +824,20 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
         </div>
 
         <div className="calculator-content">
+          {/* Check if user has researched anything */}
+          {(!getFirstResearchedComponent('drives') || !getFirstResearchedComponent('shields') || !getFirstResearchedComponent('weapons')) ? (
+            <div className="no-research-warning">
+              <h4>⚠️ Keine Technologien erforscht</h4>
+              <p>Bitte erforschen Sie zuerst Technologien in der <strong>Forschung</strong>, bevor Sie Schiffe entwerfen können.</p>
+              <p className="mt-2">Mindestens benötigt:</p>
+              <ul>
+                <li>• 1 Antriebsart (z.B. Segel, Rakete)</li>
+                <li>• 1 Schildart (z.B. Quarz, Stahl)</li>
+                <li>• 1 Waffenart (z.B. Laser, Abbaueinheit)</li>
+              </ul>
+              <button onClick={onClose} className="btn-primary mt-4">Zur Forschung gehen</button>
+            </div>
+          ) : (
           <div className="design-inputs">
             <div className="input-group">
               <label>Prototyp Name:</label>
