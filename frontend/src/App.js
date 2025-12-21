@@ -684,23 +684,41 @@ const AdminPanel = () => {
 const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }) => {
   // Get max researched level for a component type
   const getMaxResearchedLevel = (category, technology) => {
-    if (!userResearch?.research_levels) return 1;
+    if (!userResearch?.research_levels) return 0;
     const tech = userResearch.research_levels.find(
       t => t.category === category && t.technology === technology
     );
-    return tech ? Math.max(1, tech.level) : 1;
+    return tech ? tech.level : 0;
   };
+
+  // Get first researched component of a category
+  const getFirstResearchedComponent = (category) => {
+    if (!componentLevels?.[category] || !userResearch?.research_levels) return null;
+    
+    for (const type of Object.keys(componentLevels[category])) {
+      const level = getMaxResearchedLevel(category, type);
+      if (level > 0) {
+        return { type, level };
+      }
+    }
+    return null;
+  };
+
+  // Initialize with first researched components
+  const initDrive = getFirstResearchedComponent('drives') || { type: 'segel', level: 1 };
+  const initShield = getFirstResearchedComponent('shields') || { type: 'quarz', level: 1 };
+  const initWeapon = getFirstResearchedComponent('weapons') || { type: 'laser', level: 1 };
 
   const [design, setDesign] = useState({
     name: '',
-    drive_type: 'segel',
-    drive_level: getMaxResearchedLevel('drives', 'segel'),
+    drive_type: initDrive.type,
+    drive_level: initDrive.level,
     drive_quantity: 88,
-    shield_type: 'quarz',
-    shield_level: getMaxResearchedLevel('shields', 'quarz'),
+    shield_type: initShield.type,
+    shield_level: initShield.level,
     shield_quantity: 110,
-    weapon_type: 'laser',
-    weapon_level: getMaxResearchedLevel('weapons', 'laser'),
+    weapon_type: initWeapon.type,
+    weapon_level: initWeapon.level,
     weapon_quantity: 10
   });
 
