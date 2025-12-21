@@ -1687,6 +1687,7 @@ const GameInterface = () => {
               onFieldClick={handleFieldClick}
               userFleets={userFleets}
               userPlanets={userPlanets}
+              onNavigateToSpaceport={() => setActiveTab('raumhafen')}
             />
           )}
 
