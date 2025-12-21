@@ -185,6 +185,17 @@
   height: 60px;
 }
 
+.col-label {
+  @apply flex items-center justify-center text-xs text-gray-400 bg-gray-800 rounded;
+  width: 60px;
+  height: 25px;
+}
+
+.axis-label {
+  width: 30px;
+  height: 25px;
+}
+
 .observatory-field {
   @apply relative border border-gray-600 rounded cursor-pointer transition-all;
   @apply bg-gray-900 hover:bg-gray-800;
