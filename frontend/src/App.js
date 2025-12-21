@@ -838,6 +838,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               <button onClick={onClose} className="btn-primary mt-4">Zur Forschung gehen</button>
             </div>
           ) : (
+            <>
             <div className="design-inputs">
             <div className="input-group">
               <label>Prototyp Name:</label>
