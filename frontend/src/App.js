@@ -819,12 +819,14 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
                   <select value={design.drive_type} onChange={(e) => handleTypeChange('drives', e.target.value)}>
                     {componentLevels?.drives && Object.keys(componentLevels.drives).map(type => {
                       const maxLevel = getMaxResearchedLevel('drives', type);
+                      // Only show if researched (level > 0)
+                      if (maxLevel === 0) return null;
                       return (
                         <option key={type} value={type}>
                           {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
-                    })}
+                    }).filter(Boolean)}
                   </select>
                 </div>
                 <div className="component-input-group">
@@ -852,12 +854,14 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
                   <select value={design.shield_type} onChange={(e) => handleTypeChange('shields', e.target.value)}>
                     {componentLevels?.shields && Object.keys(componentLevels.shields).map(type => {
                       const maxLevel = getMaxResearchedLevel('shields', type);
+                      // Only show if researched (level > 0)
+                      if (maxLevel === 0) return null;
                       return (
                         <option key={type} value={type}>
                           {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
-                    })}
+                    }).filter(Boolean)}
                   </select>
                 </div>
                 <div className="component-input-group">
@@ -885,12 +889,14 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
                   <select value={design.weapon_type} onChange={(e) => handleTypeChange('weapons', e.target.value)}>
                     {componentLevels?.weapons && Object.keys(componentLevels.weapons).map(type => {
                       const maxLevel = getMaxResearchedLevel('weapons', type);
+                      // Only show if researched (level > 0)
+                      if (maxLevel === 0) return null;
                       return (
                         <option key={type} value={type}>
                           {type.charAt(0).toUpperCase() + type.slice(1)} (Max L{maxLevel})
                         </option>
                       );
-                    })}
+                    }).filter(Boolean)}
                   </select>
                 </div>
                 <div className="component-input-group">
