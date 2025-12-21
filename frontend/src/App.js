@@ -979,6 +979,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               </tbody>
             </table>
           </div>
+          </>
           )}
         </div>
 
