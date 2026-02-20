@@ -315,7 +315,6 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
               <tbody>
                 <tr><td>Nahrung:</td><td className="resource-food">{calculatedStats.build_cost.food.toLocaleString()}</td></tr>
                 <tr><td>Metall:</td><td className="resource-metal">{calculatedStats.build_cost.metal.toLocaleString()}</td></tr>
-                <tr><td>Silizium:</td><td className="resource-silicon">{calculatedStats.build_cost.silicon.toLocaleString()}</td></tr>
                 <tr><td>Wasserstoff:</td><td className="resource-hydrogen">{calculatedStats.build_cost.hydrogen.toLocaleString()}</td></tr>
               </tbody>
             </table>
