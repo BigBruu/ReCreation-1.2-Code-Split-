@@ -694,7 +694,6 @@ const GameInterface = () => {
                   {userBuildings.filter(b => b.category === 'resource').map(building => {
                     const totalMetal = userPlanets.reduce((sum, p) => sum + p.resources.metal, 0);
                     const canAfford = totalMetal >= building.upgrade_cost_metal;
-                    const anyUpgrading = userBuildings.some(b => b.upgrading);
                     
                     return (
                       <div key={building.building_type} className="building-card">
@@ -739,7 +738,7 @@ const GameInterface = () => {
                           ) : (
                             <button
                               onClick={() => upgradeBuilding(building.building_type)}
-                              disabled={!canAfford || anyUpgrading}
+                              disabled={!canAfford}
                               className="btn-primary upgrade-btn"
                             >
                               Ausbauen → Level {building.level + 1}
