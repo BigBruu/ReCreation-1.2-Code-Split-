@@ -103,7 +103,17 @@
 #====================================================================================================
 
 ## user_problem_statement: 
-KRITISCHES PROBLEM: Tick-System funktioniert nicht! 
+BUILDING SYSTEM TESTING REQUEST (COMPLETED ✅): 
+Teste das neue Gebäude-System für das Spiel "TheReCreation" mit folgenden Testfällen:
+1. GET /api/game/buildings - Liste alle Gebäude mit Leveln ✅
+2. POST /api/game/buildings/upgrade - Teste Upgrade-Funktion (z.B. für "werft") ✅
+3. Überprüfe Kosten-Berechnung: Base cost + 5% pro Level für Ressourcen-Gebäude ✅
+4. Teste Prototyp-Limit: Versuche ein Schiff-Design zu erstellen ohne Werft-Level (sollte fehlschlagen) ✅
+5. Teste Flotten-Limit: Versuche eine Flotte zu erstellen ohne Raumhafen-Level (sollte fehlschlagen) ✅
+6. Überprüfe Ressourcen: Silizium wurde entfernt - nur Nahrung, Metall, Wasserstoff ✅
+
+VORHERIGE PROBLEME (ABGESCHLOSSEN):
+KRITISCHES PROBLEM: Tick-System funktioniert nicht! ✅ GELÖST
 Das automatische Tick-System (jede Minute) läuft nicht korrekt. Rohstoffabbau, Forschung, Flottenbewegungen werden nicht automatisch verarbeitet. User meldet dass Tickdauer auf 0:00 steht aber keine automatische Verarbeitung stattfindet.
 
 Vorherige Observatorium Verbesserungen (ABGESCHLOSSEN): 
