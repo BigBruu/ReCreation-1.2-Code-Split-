@@ -705,20 +705,18 @@ async def process_tick():
                 mining_efficiency = config.mining_efficiency
                 actual_mining = int(total_mining_capacity * mining_efficiency)
                 
-                # Distribute mining across resource types based on availability
+                # Distribute mining across resource types based on availability (NO SILICON)
                 total_resources = (planet_obj.resources.food + planet_obj.resources.metal + 
-                                 planet_obj.resources.silicon + planet_obj.resources.hydrogen)
+                                 planet_obj.resources.hydrogen)
                 
                 if total_resources > 0:
                     # Calculate proportional mining
                     food_ratio = planet_obj.resources.food / total_resources
                     metal_ratio = planet_obj.resources.metal / total_resources
-                    silicon_ratio = planet_obj.resources.silicon / total_resources
                     hydrogen_ratio = planet_obj.resources.hydrogen / total_resources
                     
                     food_mined = min(int(actual_mining * food_ratio), planet_obj.resources.food)
                     metal_mined = min(int(actual_mining * metal_ratio), planet_obj.resources.metal)
-                    silicon_mined = min(int(actual_mining * silicon_ratio), planet_obj.resources.silicon)
                     hydrogen_mined = min(int(actual_mining * hydrogen_ratio), planet_obj.resources.hydrogen)
                     
                     # Update planet resources (subtract mined)
@@ -727,14 +725,13 @@ async def process_tick():
                         {"$inc": {
                             "resources.food": -food_mined,
                             "resources.metal": -metal_mined,
-                            "resources.silicon": -silicon_mined,
                             "resources.hydrogen": -hydrogen_mined
                         }}
                     )
                     
                     # Add mined resources to user's total (for now, we could implement cargo ships later)
                     # For simplicity, we'll add points to the user
-                    resources_value = food_mined + metal_mined + silicon_mined + hydrogen_mined
+                    resources_value = food_mined + metal_mined + hydrogen_mined
                     if resources_value > 0:
                         await db.users.update_one(
                             {"id": fleet.user_id},
