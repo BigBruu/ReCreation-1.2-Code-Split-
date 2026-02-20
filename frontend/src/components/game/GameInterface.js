@@ -254,6 +254,29 @@ const GameInterface = () => {
     }
   };
 
+  const upgradeBuilding = async (buildingType) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/game/buildings/upgrade`, {
+        building_type: buildingType
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ 
+        title: "Ausbau gestartet!", 
+        description: response.data.message 
+      });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Gebäude konnte nicht ausgebaut werden',
+        variant: "destructive" 
+      });
+    }
+  };
+
   const moveFleet = async (fleetId) => {
     try {
       const xInput = document.getElementById(`fleet-${fleetId}-x`);
