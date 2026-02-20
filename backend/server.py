@@ -549,12 +549,12 @@ async def generate_universe():
     min_resources = config.min_planet_resources
     max_resources = config.max_planet_resources
     
-    # Map planet types to resource names
+    # Map planet types to resource names (NO SILICON)
     planet_type_to_name = {
         "green": "Nahrung",
         "blue": "Wasserstoff", 
         "brown": "Metall",
-        "orange": "Silizium"
+        "orange": "Wasserstoff"
     }
     
     planets_to_create = []
