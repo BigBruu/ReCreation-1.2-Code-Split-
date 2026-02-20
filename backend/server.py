@@ -1600,14 +1600,9 @@ async def upgrade_building(upgrade_data: UpgradeBuilding, current_user: User = D
     if not target_building:
         raise HTTPException(status_code=404, detail="Building not found")
     
-    # Check if already upgrading
+    # Check if this specific building is already upgrading
     if target_building.upgrading:
-        raise HTTPException(status_code=400, detail="Building is already being upgraded")
-    
-    # Check if any other building is being upgraded
-    for b in user_buildings.buildings:
-        if b.upgrading:
-            raise HTTPException(status_code=400, detail="Another building is already being upgraded")
+        raise HTTPException(status_code=400, detail="Dieses Gebäude wird bereits ausgebaut")
     
     # Calculate cost
     upgrade_cost = calculate_building_cost(upgrade_data.building_type, target_building.level)
