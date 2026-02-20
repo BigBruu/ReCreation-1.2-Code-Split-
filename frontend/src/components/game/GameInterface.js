@@ -684,20 +684,170 @@ const GameInterface = () => {
 
           {activeTab === 'einrichtungen' && (
             <div className="facilities-content">
-              <h3>Planeten & Einrichtungen</h3>
-              <div className="planets-list">
-                {userPlanets.map(planet => (
-                  <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
-                    <h4>{planet.name}</h4>
-                    <div className="planet-position">Position: ({planet.position.x}:{planet.position.y})</div>
-                    <div className="planet-resources">
-                      <div>🌾 Nahrung: {planet.resources.food.toLocaleString()}</div>
-                      <div>⚙️ Metall: {planet.resources.metal.toLocaleString()}</div>
-                      <div>💎 Silizium: {planet.resources.silicon.toLocaleString()}</div>
-                      <div>⚡ Wasserstoff: {planet.resources.hydrogen.toLocaleString()}</div>
+              <h3>🏗️ Gebäude & Einrichtungen</h3>
+              
+              {/* Total Metal Display */}
+              <div className="total-resources-display">
+                <span>Verfügbares Metall: </span>
+                <span className="resource-metal">
+                  ⚙️ {userPlanets.reduce((sum, p) => sum + p.resources.metal, 0).toLocaleString()}
+                </span>
+              </div>
+              
+              {/* Resource Buildings */}
+              <div className="buildings-section">
+                <h4>📦 Ressourcen-Gebäude</h4>
+                <div className="buildings-grid">
+                  {userBuildings.filter(b => b.category === 'resource').map(building => {
+                    const totalMetal = userPlanets.reduce((sum, p) => sum + p.resources.metal, 0);
+                    const canAfford = totalMetal >= building.upgrade_cost_metal;
+                    const anyUpgrading = userBuildings.some(b => b.upgrading);
+                    
+                    return (
+                      <div key={building.building_type} className="building-card">
+                        <div className="building-header">
+                          <span className="building-name">
+                            {building.building_type === 'plantage' && '🌾'}
+                            {building.building_type === 'erzmine' && '⚙️'}
+                            {building.building_type === 'elektrolysator' && '⚡'}
+                            {' '}{building.name}
+                          </span>
+                          <span className="building-level">Level {building.level}</span>
+                        </div>
+                        <div className="building-description">{building.description}</div>
+                        
+                        <div className="building-bonus">
+                          {building.current_bonus.resource_per_tick > 0 ? (
+                            <span className="bonus-active">
+                              +{building.current_bonus.resource_per_tick} {building.current_bonus.resource_type === 'food' ? 'Nahrung' : building.current_bonus.resource_type === 'metal' ? 'Metall' : 'Wasserstoff'}/Tick
+                            </span>
+                          ) : (
+                            <span className="bonus-inactive">Kein Bonus (Level 0)</span>
+                          )}
+                        </div>
+                        
+                        <div className="building-upgrade">
+                          <div className="upgrade-cost">
+                            Kosten: <span className={canAfford ? 'resource-metal' : 'resource-insufficient'}>
+                              ⚙️ {building.upgrade_cost_metal.toLocaleString()} Metall
+                            </span>
+                          </div>
+                          <div className="upgrade-time">
+                            Bauzeit: {building.upgrade_time_ticks} Ticks
+                          </div>
+                          
+                          {building.upgrading ? (
+                            <div className="upgrading-indicator">
+                              🔨 Ausbau läuft...
+                              <div className="upgrade-completion">
+                                Fertig: {new Date(building.upgrade_end_time).toLocaleString('de-DE')}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => upgradeBuilding(building.building_type)}
+                              disabled={!canAfford || anyUpgrading}
+                              className="btn-primary upgrade-btn"
+                            >
+                              Ausbauen → Level {building.level + 1}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Special Buildings */}
+              <div className="buildings-section">
+                <h4>🏛️ Spezial-Gebäude</h4>
+                <div className="buildings-grid">
+                  {userBuildings.filter(b => b.category === 'special').map(building => {
+                    const totalMetal = userPlanets.reduce((sum, p) => sum + p.resources.metal, 0);
+                    const canAfford = totalMetal >= building.upgrade_cost_metal;
+                    const anyUpgrading = userBuildings.some(b => b.upgrading);
+                    
+                    return (
+                      <div key={building.building_type} className={`building-card building-special building-${building.building_type}`}>
+                        <div className="building-header">
+                          <span className="building-name">
+                            {building.building_type === 'werft' && '🔧'}
+                            {building.building_type === 'raumhafen' && '🚀'}
+                            {building.building_type === 'forschungslabor' && '🔬'}
+                            {' '}{building.name}
+                          </span>
+                          <span className="building-level">Level {building.level}</span>
+                        </div>
+                        <div className="building-description">{building.description}</div>
+                        
+                        <div className="building-bonus">
+                          {building.building_type === 'werft' && (
+                            <span className="bonus-active">
+                              Max. Prototypen: {building.current_bonus.prototype_slots || 0}
+                            </span>
+                          )}
+                          {building.building_type === 'raumhafen' && (
+                            <span className="bonus-active">
+                              Max. Flotten: {building.current_bonus.fleet_slots || 0}
+                            </span>
+                          )}
+                          {building.building_type === 'forschungslabor' && (
+                            <span className="bonus-active">
+                              Forschungszeit: -{building.current_bonus.research_time_reduction || 0}%
+                            </span>
+                          )}
+                        </div>
+                        
+                        <div className="building-upgrade">
+                          <div className="upgrade-cost">
+                            Kosten: <span className={canAfford ? 'resource-metal' : 'resource-insufficient'}>
+                              ⚙️ {building.upgrade_cost_metal.toLocaleString()} Metall
+                            </span>
+                          </div>
+                          <div className="upgrade-time">
+                            Bauzeit: {building.upgrade_time_ticks} Ticks
+                          </div>
+                          
+                          {building.upgrading ? (
+                            <div className="upgrading-indicator">
+                              🔨 Ausbau läuft...
+                              <div className="upgrade-completion">
+                                Fertig: {new Date(building.upgrade_end_time).toLocaleString('de-DE')}
+                              </div>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => upgradeBuilding(building.building_type)}
+                              disabled={!canAfford || anyUpgrading}
+                              className="btn-primary upgrade-btn"
+                            >
+                              Ausbauen → Level {building.level + 1}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              
+              {/* Planets Overview */}
+              <div className="planets-section">
+                <h4>🌍 Ihre Planeten</h4>
+                <div className="planets-list">
+                  {userPlanets.map(planet => (
+                    <div key={planet.id} className={`planet-card planet-${planet.planet_type}`}>
+                      <h5>{planet.name}</h5>
+                      <div className="planet-position">({planet.position.x}:{planet.position.y})</div>
+                      <div className="planet-resources">
+                        <span>🌾 {planet.resources.food.toLocaleString()}</span>
+                        <span>⚙️ {planet.resources.metal.toLocaleString()}</span>
+                        <span>⚡ {planet.resources.hydrogen.toLocaleString()}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           )}
