@@ -44,23 +44,92 @@ TICK_DURATION = 60  # 1 minute per tick
 MOVEMENT_POINTS_NORMAL = 6000
 MOVEMENT_POINTS_DIAGONAL = 7200
 
-# Planet Types with Authentic Resources
+# Planet Types with Authentic Resources (NO SILICON - only Food, Metal, Hydrogen)
 PLANET_TYPES = {
     "green": {
         "color": "green",
-        "base_resources": {"food": 50000000, "metal": 30000000, "silicon": 20000000, "hydrogen": 15000000}
+        "base_resources": {"food": 50000000, "metal": 30000000, "hydrogen": 15000000}
     },
     "blue": {
         "color": "blue", 
-        "base_resources": {"food": 20000000, "metal": 60000000, "silicon": 40000000, "hydrogen": 25000000}
+        "base_resources": {"food": 20000000, "metal": 60000000, "hydrogen": 50000000}
     },
     "brown": {
         "color": "brown",
-        "base_resources": {"food": 15000000, "metal": 25000000, "silicon": 70000000, "hydrogen": 35000000}
+        "base_resources": {"food": 15000000, "metal": 70000000, "hydrogen": 35000000}
     },
     "orange": {
         "color": "orange",
-        "base_resources": {"food": 35000000, "metal": 45000000, "silicon": 15000000, "hydrogen": 50000000}
+        "base_resources": {"food": 35000000, "metal": 45000000, "hydrogen": 50000000}
+    }
+}
+
+# Building System Configuration
+BUILDING_TYPES = {
+    # Resource Buildings - 500 Metal base, +5% cost per level, +5 resources per level, 5 ticks build time
+    "plantage": {
+        "name": "Plantage",
+        "description": "Produziert Nahrung pro Tick",
+        "base_cost": 500,
+        "cost_increase_percent": 5,
+        "base_build_time_ticks": 5,
+        "build_time_increase_percent": 5,
+        "resource_bonus_per_level": 5,
+        "resource_type": "food",
+        "category": "resource"
+    },
+    "erzmine": {
+        "name": "Erzmine",
+        "description": "Produziert Metall pro Tick",
+        "base_cost": 500,
+        "cost_increase_percent": 5,
+        "base_build_time_ticks": 5,
+        "build_time_increase_percent": 5,
+        "resource_bonus_per_level": 5,
+        "resource_type": "metal",
+        "category": "resource"
+    },
+    "elektrolysator": {
+        "name": "Elektrolysator",
+        "description": "Produziert Wasserstoff pro Tick",
+        "base_cost": 500,
+        "cost_increase_percent": 5,
+        "base_build_time_ticks": 5,
+        "build_time_increase_percent": 5,
+        "resource_bonus_per_level": 5,
+        "resource_type": "hydrogen",
+        "category": "resource"
+    },
+    # Special Buildings
+    "werft": {
+        "name": "Werft",
+        "description": "+1 Prototyp-Slot pro Level",
+        "base_cost": 5000,
+        "cost_increase_percent": 10,
+        "base_build_time_ticks": 15,
+        "build_time_increase_percent": 5,
+        "prototype_slots_per_level": 1,
+        "category": "special"
+    },
+    "raumhafen": {
+        "name": "Raumhafen",
+        "description": "+1 Flotte pro Level",
+        "base_cost": 10000,
+        "cost_increase_percent": 15,
+        "base_build_time_ticks": 20,
+        "build_time_increase_percent": 5,
+        "fleet_slots_per_level": 1,
+        "category": "special"
+    },
+    "forschungslabor": {
+        "name": "Forschungslabor",
+        "description": "-13% Forschungszeit pro Level",
+        "base_cost": 15000,
+        "cost_increase_percent": 8,
+        "base_build_time_ticks": 30,
+        "build_time_increase_percent": 5,
+        "research_time_reduction_percent": 13,
+        "category": "special"
     }
 }
 
