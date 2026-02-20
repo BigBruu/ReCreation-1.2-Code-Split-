@@ -938,7 +938,6 @@ const GameInterface = () => {
                 <div className="planet-resources">
                   <div>🌾 {selectedField.planet.resources.food.toLocaleString()}</div>
                   <div>⚙️ {selectedField.planet.resources.metal.toLocaleString()}</div>
-                  <div>💎 {selectedField.planet.resources.silicon.toLocaleString()}</div>
                   <div>⚡ {selectedField.planet.resources.hydrogen.toLocaleString()}</div>
                 </div>
               </div>
