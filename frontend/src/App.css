@@ -944,3 +944,129 @@
 .no-research-warning ul {
   @apply text-left inline-block text-gray-300 space-y-1;
 }
+
+
+/* Buildings System Styles */
+.facilities-content {
+  @apply space-y-6;
+}
+
+.total-resources-display {
+  @apply bg-gray-800 p-4 rounded border border-gray-700 text-lg;
+}
+
+.buildings-section {
+  @apply mt-6;
+}
+
+.buildings-section h4 {
+  @apply text-xl font-bold text-blue-400 mb-4;
+}
+
+.buildings-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.building-card {
+  @apply bg-gray-800 p-4 rounded border border-gray-700 space-y-3;
+}
+
+.building-special {
+  @apply border-blue-500;
+}
+
+.building-werft {
+  @apply border-yellow-500;
+}
+
+.building-raumhafen {
+  @apply border-purple-500;
+}
+
+.building-forschungslabor {
+  @apply border-cyan-500;
+}
+
+.building-header {
+  @apply flex justify-between items-center;
+}
+
+.building-name {
+  @apply text-lg font-semibold text-white;
+}
+
+.building-level {
+  @apply px-2 py-1 bg-blue-600 rounded text-sm font-bold;
+}
+
+.building-description {
+  @apply text-sm text-gray-400;
+}
+
+.building-bonus {
+  @apply py-2 border-t border-b border-gray-700;
+}
+
+.bonus-active {
+  @apply text-green-400 font-semibold;
+}
+
+.bonus-inactive {
+  @apply text-gray-500;
+}
+
+.building-upgrade {
+  @apply space-y-2;
+}
+
+.upgrade-cost, .upgrade-time {
+  @apply text-sm;
+}
+
+.resource-insufficient {
+  @apply text-red-400;
+}
+
+.upgrade-btn {
+  @apply w-full py-2 text-sm;
+}
+
+.upgrading-indicator {
+  @apply bg-yellow-900 p-3 rounded text-center text-yellow-300 font-semibold;
+}
+
+.upgrade-completion {
+  @apply text-xs text-yellow-400 mt-1;
+}
+
+.planets-section {
+  @apply mt-6 pt-6 border-t border-gray-700;
+}
+
+.planets-section h4 {
+  @apply text-xl font-bold text-green-400 mb-4;
+}
+
+.planets-section .planets-list {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4;
+}
+
+.planets-section .planet-card {
+  @apply bg-gray-800 p-4 rounded border border-gray-700;
+}
+
+.planets-section .planet-card h5 {
+  @apply text-lg font-bold mb-1;
+}
+
+.planets-section .planet-position {
+  @apply text-sm text-gray-400 mb-2;
+}
+
+.planets-section .planet-resources {
+  @apply flex flex-wrap gap-2 text-sm;
+}
+
+.planets-section .planet-resources span {
+  @apply bg-gray-700 px-2 py-1 rounded;
+}
