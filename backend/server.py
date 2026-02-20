@@ -515,12 +515,11 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
     if "mining_base" in weapon_data:
         mining_capacity = weapon_data["mining_base"] * design.weapon_level * design.weapon_quantity
     
-    # Calculate build costs (authentic formulas)
+    # Calculate build costs (authentic formulas - NO SILICON)
     base_food_cost = 0  # No colony units anymore
-    base_metal_cost = (drive_weight + weapon_weight) * design.drive_level * 10
-    base_silicon_cost = (shield_weight + weapon_weight) * design.shield_level * 5
+    base_metal_cost = (drive_weight + weapon_weight) * design.drive_level * 10 + (shield_weight + weapon_weight) * design.shield_level * 5
     base_hydrogen_cost = weapon_weight * design.weapon_level * 2
-    
+
     # Calculate build time (based on complexity)
     build_time_ticks = max(1, total_weight // 100) + design.drive_level + design.shield_level + design.weapon_level
     
@@ -532,7 +531,6 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
         "build_cost": {
             "food": base_food_cost,
             "metal": base_metal_cost,
-            "silicon": base_silicon_cost,
             "hydrogen": base_hydrogen_cost
         },
         "build_time_ticks": build_time_ticks
