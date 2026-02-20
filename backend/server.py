@@ -1668,7 +1668,21 @@ async def start_research(research_data: StartResearch, current_user: User = Depe
     # Get research costs and validate resources
     tech_costs = RESEARCH_BASE_COSTS[research_data.category][research_data.technology]
     actual_cost = calculate_research_cost(tech_costs["base_cost"], tech_research.level)
-    research_time = calculate_research_time(tech_costs["base_time_hours"], tech_research.level)
+    base_research_time = calculate_research_time(tech_costs["base_time_hours"], tech_research.level)
+    
+    # Apply Forschungslabor bonus (-13% per level)
+    user_buildings_data = await db.user_buildings.find_one({"user_id": current_user.id})
+    lab_level = 0
+    if user_buildings_data:
+        user_buildings = UserBuildings(**user_buildings_data)
+        for building in user_buildings.buildings:
+            if building.building_type == "forschungslabor":
+                lab_level = building.level
+                break
+    
+    # Calculate reduced research time
+    research_time_reduction = 1 - ((1 - 0.13) ** lab_level)  # -13% per level compound
+    research_time = base_research_time * (1 - research_time_reduction)
     
     # Check user's total food resources
     user_planets = await db.planets.find({"owner_id": current_user.id}).to_list(100)
