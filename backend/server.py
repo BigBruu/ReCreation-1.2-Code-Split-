@@ -1184,18 +1184,16 @@ async def build_ships(build_data: BuildShips, current_user: User = Depends(get_c
     design_obj = ShipDesign(**design)
     planet_obj = Planet(**planet)
     
-    # Calculate total build cost
+    # Calculate total build cost (NO SILICON)
     total_cost = {
         "food": design_obj.calculated_stats["build_cost"]["food"] * build_data.quantity,
         "metal": design_obj.calculated_stats["build_cost"]["metal"] * build_data.quantity,
-        "silicon": design_obj.calculated_stats["build_cost"]["silicon"] * build_data.quantity,
         "hydrogen": design_obj.calculated_stats["build_cost"]["hydrogen"] * build_data.quantity
     }
     
     # Check resources
     if (planet_obj.resources.food < total_cost["food"] or
         planet_obj.resources.metal < total_cost["metal"] or
-        planet_obj.resources.silicon < total_cost["silicon"] or
         planet_obj.resources.hydrogen < total_cost["hydrogen"]):
         raise HTTPException(status_code=400, detail="Insufficient resources")
     
@@ -1205,7 +1203,6 @@ async def build_ships(build_data: BuildShips, current_user: User = Depends(get_c
         {"$inc": {
             "resources.food": -total_cost["food"],
             "resources.metal": -total_cost["metal"],
-            "resources.silicon": -total_cost["silicon"],
             "resources.hydrogen": -total_cost["hydrogen"]
         }}
     )
