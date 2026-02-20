@@ -192,8 +192,24 @@ class User(BaseModel):
 class Resources(BaseModel):
     food: int = 0
     metal: int = 0
-    silicon: int = 0
     hydrogen: int = 0
+
+# --- BUILDING MODELS ---
+class BuildingLevel(BaseModel):
+    building_type: str  # "plantage", "erzmine", "elektrolysator", "werft", "raumhafen", "forschungslabor"
+    level: int = 0
+    upgrading: bool = False
+    upgrade_start_time: Optional[datetime] = None
+    upgrade_end_time: Optional[datetime] = None
+
+class UserBuildings(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    buildings: List[BuildingLevel] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UpgradeBuilding(BaseModel):
+    building_type: str
 
 class Position(BaseModel):
     x: int
