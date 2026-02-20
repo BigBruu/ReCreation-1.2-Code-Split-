@@ -627,11 +627,77 @@ async def init_game_state():
     return GameState(**existing_state)
 
 async def process_tick():
-    """Process authentic game tick - movement, mining, and research"""
+    """Process authentic game tick - movement, mining, research, and buildings"""
     config = await get_game_config()
+    current_time = datetime.utcnow()
+    
+    # Process completed building upgrades
+    all_buildings = await db.user_buildings.find({}).to_list(1000)
+    for buildings_data in all_buildings:
+        user_buildings = UserBuildings(**buildings_data)
+        buildings_updated = False
+        
+        for i, building in enumerate(user_buildings.buildings):
+            if (building.upgrading and building.upgrade_end_time and 
+                building.upgrade_end_time <= current_time):
+                # Building upgrade completed
+                user_buildings.buildings[i].level += 1
+                user_buildings.buildings[i].upgrading = False
+                user_buildings.buildings[i].upgrade_start_time = None
+                user_buildings.buildings[i].upgrade_end_time = None
+                buildings_updated = True
+                
+                # Award points for building completion
+                await db.users.update_one(
+                    {"id": user_buildings.user_id},
+                    {"$inc": {"points": 500}}  # 500 points per building level
+                )
+        
+        if buildings_updated:
+            await db.user_buildings.update_one(
+                {"user_id": user_buildings.user_id},
+                {"$set": {"buildings": [b.dict() for b in user_buildings.buildings]}}
+            )
+    
+    # Apply resource building bonuses to player planets
+    all_users = await db.users.find({}).to_list(1000)
+    for user_data in all_users:
+        user_id = user_data["id"]
+        
+        # Get user's buildings
+        user_buildings_data = await db.user_buildings.find_one({"user_id": user_id})
+        if not user_buildings_data:
+            continue
+        
+        user_buildings = UserBuildings(**user_buildings_data)
+        
+        # Calculate resource bonuses from buildings
+        food_bonus = 0
+        metal_bonus = 0
+        hydrogen_bonus = 0
+        
+        for building in user_buildings.buildings:
+            if building.building_type == "plantage":
+                food_bonus = building.level * 5  # +5 food per level
+            elif building.building_type == "erzmine":
+                metal_bonus = building.level * 5  # +5 metal per level
+            elif building.building_type == "elektrolysator":
+                hydrogen_bonus = building.level * 5  # +5 hydrogen per level
+        
+        # Apply bonuses to user's planets
+        if food_bonus > 0 or metal_bonus > 0 or hydrogen_bonus > 0:
+            user_planets = await db.planets.find({"owner_id": user_id}).to_list(100)
+            for planet in user_planets:
+                await db.planets.update_one(
+                    {"id": planet["id"]},
+                    {"$inc": {
+                        "resources.food": food_bonus,
+                        "resources.metal": metal_bonus,
+                        "resources.hydrogen": hydrogen_bonus
+                    }}
+                )
     
     # Process completed research
-    current_time = datetime.utcnow()
     all_research = await db.user_research.find({}).to_list(1000)
     
     for research_data in all_research:
