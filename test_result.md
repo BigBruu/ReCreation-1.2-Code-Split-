@@ -146,6 +146,18 @@ Vorherige Observatorium Verbesserungen (ABGESCHLOSSEN):
         - agent: "testing"
         - comment: "AUTOMATIC TICK SYSTEM TESTING COMPLETED: ✅ Game State API (/api/game/state) working correctly - returns current_tick, last_tick_time, next_tick_time with proper 60s intervals. ✅ Manual Tick API (/api/game/tick) working correctly - processes tick and increments current_tick. ✅ Automatic Tick Processing verified - monitored system for 70 seconds and confirmed automatic tick increment from 76->77 with proper timestamp updates. ✅ Resource Processing verified - detected resource changes during tick processing (Food: 28850124->28850114, Metal: 48083540->48063313). ✅ Backend logs confirm automatic tick system running: '[TICK] Automatic tick processed at 2025-11-25 16:47:20.365687'. All 5/5 tick system tests passed. The automatic tick system is fully functional and processing game state updates every 60 seconds as configured."
 
+  - task: "Gebäude-System für TheReCreation implementieren und testen"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+        - agent: "testing"
+        - comment: "NEW BUILDING SYSTEM TESTING COMPLETED: ✅ GET /api/game/buildings API working correctly - returns all 6 expected buildings (plantage, erzmine, elektrolysator, werft, raumhafen, forschungslabor) with proper levels, costs, and categories. ✅ POST /api/game/buildings/upgrade API working correctly - properly handles upgrade requests and enforces single building upgrade limit. ✅ Cost calculation verified - resource buildings (plantage, erzmine, elektrolysator) use correct formula: base_cost * (1.05)^level with 500 Metal base cost. Special buildings have correct base costs: werft (5000), raumhafen (10000), forschungslabor (15000). ✅ Prototype limit enforcement working - correctly rejects ship design creation when werft level is insufficient (0 designs allowed at level 0). ✅ Fleet limit enforcement working - correctly rejects fleet creation when raumhafen level is insufficient (0 fleets allowed at level 0). ✅ Resource validation confirmed - only Food, Metal, Hydrogen resources exist (Silicon successfully removed). ✅ Single building upgrade limit working - correctly rejects second upgrade attempt while another building is upgrading. ✅ Metal cost deduction working - upgrade costs are properly deducted from Metal resources across user planets. All 10/10 building system tests passed. The building system is fully functional and meets all specifications from the review request."
+
 ## frontend:
   - task: "Koordinaten-Format von (0,0) zu (0:0) ändern"
     implemented: true
