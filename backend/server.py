@@ -1389,6 +1389,176 @@ async def get_rankings():
         })
     return rankings
 
+# --- BUILDING HELPER FUNCTIONS ---
+async def init_user_buildings(user_id: str) -> UserBuildings:
+    """Initialize buildings for a new user"""
+    buildings = []
+    for building_type in BUILDING_TYPES.keys():
+        buildings.append(BuildingLevel(building_type=building_type, level=0))
+    
+    user_buildings = UserBuildings(user_id=user_id, buildings=buildings)
+    await db.user_buildings.insert_one(user_buildings.dict())
+    return user_buildings
+
+def calculate_building_cost(building_type: str, current_level: int) -> int:
+    """Calculate metal cost for upgrading a building"""
+    building = BUILDING_TYPES[building_type]
+    base_cost = building["base_cost"]
+    increase = building["cost_increase_percent"] / 100
+    # Cost for level N = base_cost * (1 + increase)^N
+    return int(base_cost * ((1 + increase) ** current_level))
+
+def calculate_building_time(building_type: str, current_level: int) -> int:
+    """Calculate build time in ticks for upgrading a building"""
+    building = BUILDING_TYPES[building_type]
+    base_time = building["base_build_time_ticks"]
+    increase = building["build_time_increase_percent"] / 100
+    # Time for level N = base_time * (1 + increase)^N
+    return int(base_time * ((1 + increase) ** current_level))
+
+def get_building_bonus(building_type: str, level: int) -> dict:
+    """Get the bonus provided by a building at a specific level"""
+    building = BUILDING_TYPES[building_type]
+    bonus = {"type": building_type, "level": level}
+    
+    if "resource_bonus_per_level" in building:
+        bonus["resource_per_tick"] = building["resource_bonus_per_level"] * level
+        bonus["resource_type"] = building["resource_type"]
+    
+    if "prototype_slots_per_level" in building:
+        bonus["prototype_slots"] = building["prototype_slots_per_level"] * level
+    
+    if "fleet_slots_per_level" in building:
+        bonus["fleet_slots"] = building["fleet_slots_per_level"] * level
+    
+    if "research_time_reduction_percent" in building:
+        # Cumulative reduction: 1 - (1 - 0.13)^level
+        reduction = 1 - ((1 - building["research_time_reduction_percent"] / 100) ** level)
+        bonus["research_time_reduction"] = round(reduction * 100, 1)
+    
+    return bonus
+
+# --- BUILDING ROUTES ---
+@api_router.get("/game/buildings")
+async def get_user_buildings(current_user: User = Depends(get_current_user)):
+    """Get user's building levels and bonuses"""
+    buildings = await db.user_buildings.find_one({"user_id": current_user.id})
+    if not buildings:
+        user_buildings = await init_user_buildings(current_user.id)
+    else:
+        user_buildings = UserBuildings(**buildings)
+    
+    # Calculate bonuses and upgrade info for each building
+    result = []
+    for building in user_buildings.buildings:
+        building_info = BUILDING_TYPES[building.building_type]
+        upgrade_cost = calculate_building_cost(building.building_type, building.level)
+        upgrade_time = calculate_building_time(building.building_type, building.level)
+        bonus = get_building_bonus(building.building_type, building.level)
+        
+        result.append({
+            "building_type": building.building_type,
+            "name": building_info["name"],
+            "description": building_info["description"],
+            "category": building_info["category"],
+            "level": building.level,
+            "upgrading": building.upgrading,
+            "upgrade_end_time": building.upgrade_end_time.isoformat() if building.upgrade_end_time else None,
+            "upgrade_cost_metal": upgrade_cost,
+            "upgrade_time_ticks": upgrade_time,
+            "current_bonus": bonus
+        })
+    
+    return result
+
+@api_router.post("/game/buildings/upgrade")
+async def upgrade_building(upgrade_data: UpgradeBuilding, current_user: User = Depends(get_current_user)):
+    """Start upgrading a building"""
+    if upgrade_data.building_type not in BUILDING_TYPES:
+        raise HTTPException(status_code=400, detail="Invalid building type")
+    
+    # Get user's buildings
+    buildings_data = await db.user_buildings.find_one({"user_id": current_user.id})
+    if not buildings_data:
+        user_buildings = await init_user_buildings(current_user.id)
+    else:
+        user_buildings = UserBuildings(**buildings_data)
+    
+    # Find the building
+    target_building = None
+    building_index = -1
+    for i, b in enumerate(user_buildings.buildings):
+        if b.building_type == upgrade_data.building_type:
+            target_building = b
+            building_index = i
+            break
+    
+    if not target_building:
+        raise HTTPException(status_code=404, detail="Building not found")
+    
+    # Check if already upgrading
+    if target_building.upgrading:
+        raise HTTPException(status_code=400, detail="Building is already being upgraded")
+    
+    # Check if any other building is being upgraded
+    for b in user_buildings.buildings:
+        if b.upgrading:
+            raise HTTPException(status_code=400, detail="Another building is already being upgraded")
+    
+    # Calculate cost
+    upgrade_cost = calculate_building_cost(upgrade_data.building_type, target_building.level)
+    
+    # Check user's total metal resources
+    user_planets = await db.planets.find({"owner_id": current_user.id}).to_list(100)
+    total_metal = sum(planet["resources"]["metal"] for planet in user_planets)
+    
+    if total_metal < upgrade_cost:
+        raise HTTPException(status_code=400, detail=f"Insufficient metal. Need {upgrade_cost}, have {total_metal}")
+    
+    # Deduct metal costs proportionally from planets
+    remaining_cost = upgrade_cost
+    for planet in user_planets:
+        if remaining_cost <= 0:
+            break
+        planet_metal = planet["resources"]["metal"]
+        if planet_metal > 0:
+            deduction = min(planet_metal, remaining_cost)
+            await db.planets.update_one(
+                {"id": planet["id"]},
+                {"$inc": {"resources.metal": -deduction}}
+            )
+            remaining_cost -= deduction
+    
+    # Calculate upgrade time
+    config = await get_game_config()
+    upgrade_time_ticks = calculate_building_time(upgrade_data.building_type, target_building.level)
+    upgrade_time_seconds = upgrade_time_ticks * config.tick_duration
+    
+    upgrade_start = datetime.utcnow()
+    upgrade_end = upgrade_start + timedelta(seconds=upgrade_time_seconds)
+    
+    # Update building status
+    user_buildings.buildings[building_index].upgrading = True
+    user_buildings.buildings[building_index].upgrade_start_time = upgrade_start
+    user_buildings.buildings[building_index].upgrade_end_time = upgrade_end
+    
+    await db.user_buildings.update_one(
+        {"user_id": current_user.id},
+        {"$set": {"buildings": [b.dict() for b in user_buildings.buildings]}}
+    )
+    
+    return {
+        "message": f"Upgrade started for {BUILDING_TYPES[upgrade_data.building_type]['name']}",
+        "cost": upgrade_cost,
+        "completion_time": upgrade_end.isoformat(),
+        "duration_ticks": upgrade_time_ticks
+    }
+
+@api_router.get("/game/building-types")
+async def get_building_types():
+    """Get all available building types and their stats"""
+    return BUILDING_TYPES
+
 # --- RESEARCH ROUTES ---
 @api_router.get("/game/research", response_model=UserResearch)
 async def get_user_research(current_user: User = Depends(get_current_user)):
