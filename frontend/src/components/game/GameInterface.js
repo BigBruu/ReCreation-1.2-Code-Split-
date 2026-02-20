@@ -27,6 +27,7 @@ const GameInterface = () => {
   const [targetCoordinates, setTargetCoordinates] = useState(null);
   const [showShipCalculator, setShowShipCalculator] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [userBuildings, setUserBuildings] = useState([]);
 
   useEffect(() => {
     fetchGameData();
