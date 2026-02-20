@@ -1183,7 +1183,26 @@ async def get_user_planets(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/game/ship-design", response_model=ShipDesign)
 async def create_ship_design(design_data: CreateShipDesign, current_user: User = Depends(get_current_user)):
-    """Create a new ship design (Prototyp) - Abbaueinheit is now a weapon"""
+    """Create a new ship design (Prototyp) - limited by Werft level"""
+    # Check Werft level for prototype slots
+    user_buildings_data = await db.user_buildings.find_one({"user_id": current_user.id})
+    werft_level = 0
+    if user_buildings_data:
+        user_buildings = UserBuildings(**user_buildings_data)
+        for building in user_buildings.buildings:
+            if building.building_type == "werft":
+                werft_level = building.level
+                break
+    
+    max_prototypes = werft_level  # 1 prototype per Werft level
+    current_designs = await db.ship_designs.count_documents({"user_id": current_user.id})
+    
+    if current_designs >= max_prototypes:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Prototyp-Limit erreicht! Werft Level {werft_level} erlaubt nur {max_prototypes} Prototypen. Bauen Sie die Werft aus."
+        )
+    
     # Validate components exist and levels are valid
     if design_data.drive_type not in COMPONENT_LEVELS["drives"]:
         raise HTTPException(status_code=400, detail="Invalid drive type")
