@@ -146,7 +146,7 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
         </div>
         <div className="legend-item">
           <div className="planet planet-orange"></div>
-          <span>Silizium</span>
+          <span>Wasserstoff</span>
         </div>
       </div>
     </div>
