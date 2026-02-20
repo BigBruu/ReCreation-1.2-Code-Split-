@@ -1347,7 +1347,26 @@ async def get_spaceport_ships(current_user: User = Depends(get_current_user)):
 
 @api_router.post("/game/create-fleet")
 async def create_fleet_from_spaceport(fleet_data: CreateFleetFromSpaceport, current_user: User = Depends(get_current_user)):
-    """Create fleet from ships in spaceport"""
+    """Create fleet from ships in spaceport - limited by Raumhafen level"""
+    # Check Raumhafen level for fleet slots
+    user_buildings_data = await db.user_buildings.find_one({"user_id": current_user.id})
+    raumhafen_level = 0
+    if user_buildings_data:
+        user_buildings = UserBuildings(**user_buildings_data)
+        for building in user_buildings.buildings:
+            if building.building_type == "raumhafen":
+                raumhafen_level = building.level
+                break
+    
+    max_fleets = raumhafen_level  # 1 fleet per Raumhafen level
+    current_fleets = await db.fleets.count_documents({"user_id": current_user.id})
+    
+    if current_fleets >= max_fleets:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Flotten-Limit erreicht! Raumhafen Level {raumhafen_level} erlaubt nur {max_fleets} Flotten. Bauen Sie den Raumhafen aus."
+        )
+    
     # Check planet ownership
     planet = await db.planets.find_one({"id": fleet_data.planet_id, "owner_id": current_user.id})
     if not planet:
