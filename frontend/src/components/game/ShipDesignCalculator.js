@@ -79,7 +79,7 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
         mining_capacity: 0,
         total_weight: 0,
         build_time_ticks: 0,
-        build_cost: { food: 0, metal: 0, silicon: 0, hydrogen: 0 }
+        build_cost: { food: 0, metal: 0, hydrogen: 0 }
       };
     }
 
@@ -101,9 +101,6 @@ const ShipDesignCalculator = ({ onClose, onSave, componentLevels, userResearch }
       metal: (driveStats.cost.metal * design.drive_quantity) +
              (shieldStats.cost.metal * design.shield_quantity) +
              (weaponStats.cost.metal * design.weapon_quantity),
-      silicon: (driveStats.cost.silicon * design.drive_quantity) +
-               (shieldStats.cost.silicon * design.shield_quantity) +
-               (weaponStats.cost.silicon * design.weapon_quantity),
       hydrogen: (driveStats.cost.hydrogen * design.drive_quantity) +
                 (shieldStats.cost.hydrogen * design.shield_quantity) +
                 (weaponStats.cost.hydrogen * design.weapon_quantity)
