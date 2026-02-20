@@ -395,12 +395,6 @@ const GameInterface = () => {
                   </span>
                 </div>
                 <div className="resource-item">
-                  <span className="resource-label">Silizium</span>
-                  <span className="resource-value resource-silicon">
-                    {userPlanets.reduce((sum, p) => sum + p.resources.silicon, 0).toLocaleString()}
-                  </span>
-                </div>
-                <div className="resource-item">
                   <span className="resource-label">Wasserstoff</span>
                   <span className="resource-value resource-hydrogen">
                     {userPlanets.reduce((sum, p) => sum + p.resources.hydrogen, 0).toLocaleString()}
