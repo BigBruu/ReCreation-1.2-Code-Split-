@@ -665,7 +665,6 @@ const GameInterface = () => {
                         <div className="cost-display">
                           <span className="resource-food">🌾 {design.calculated_stats.build_cost?.food || 0}</span>
                           <span className="resource-metal">⚙️ {design.calculated_stats.build_cost?.metal || 0}</span>
-                          <span className="resource-silicon">💎 {design.calculated_stats.build_cost?.silicon || 0}</span>
                           <span className="resource-hydrogen">⚡ {design.calculated_stats.build_cost?.hydrogen || 0}</span>
                         </div>
                       </div>
