@@ -78,7 +78,7 @@ const GameInterface = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [gameStateRes, planetsRes, fleetsRes, designsRes, componentRes, rankingsRes, researchRes, costsRes, spaceportRes, buildingsRes] = await Promise.all([
+      const [gameStateRes, planetsRes, fleetsRes, designsRes, componentRes, rankingsRes, researchRes, costsRes, spaceportRes, buildingsRes, battleReportsRes, debrisRes] = await Promise.all([
         axios.get(`${API}/game/state`, { headers }),
         axios.get(`${API}/game/planets`, { headers }),
         axios.get(`${API}/game/fleets`, { headers }),
@@ -88,7 +88,9 @@ const GameInterface = () => {
         axios.get(`${API}/game/research`, { headers }),
         axios.get(`${API}/game/research/costs`, { headers }),
         axios.get(`${API}/game/spaceport-ships`, { headers }),
-        axios.get(`${API}/game/buildings`, { headers })
+        axios.get(`${API}/game/buildings`, { headers }),
+        axios.get(`${API}/game/battle-reports`, { headers }),
+        axios.get(`${API}/game/debris-fields`, { headers })
       ]);
 
       setGameState(gameStateRes.data);
@@ -101,6 +103,8 @@ const GameInterface = () => {
       setResearchCosts(costsRes.data);
       setSpaceportShips(spaceportRes.data);
       setUserBuildings(buildingsRes.data);
+      setBattleReports(battleReportsRes.data);
+      setDebrisFields(debrisRes.data);
     } catch (error) {
       console.error('Failed to fetch game data:', error);
     }
