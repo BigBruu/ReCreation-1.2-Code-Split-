@@ -937,6 +937,61 @@ async def process_tick():
                 }}
             )
     
+    # --- COMBAT PROCESSING ---
+    # Get current game state for tick number
+    game_state = await get_or_create_game_state()
+    
+    # Find all stationary fleets and check for combat
+    all_fleets = await db.fleets.find({"movement_end_time": None}).to_list(1000)
+    
+    # Group fleets by position
+    fleets_by_position = {}
+    for fleet_data in all_fleets:
+        fleet = Fleet(**fleet_data)
+        pos_key = f"{fleet.position.x},{fleet.position.y}"
+        if pos_key not in fleets_by_position:
+            fleets_by_position[pos_key] = []
+        fleets_by_position[pos_key].append(fleet)
+    
+    # Process combat for positions with multiple fleets from different users
+    processed_fleets = set()
+    for pos_key, position_fleets in fleets_by_position.items():
+        if len(position_fleets) < 2:
+            continue
+        
+        # Check for enemy fleets at this position
+        for i, fleet1 in enumerate(position_fleets):
+            if fleet1.id in processed_fleets:
+                continue
+            
+            for fleet2 in position_fleets[i+1:]:
+                if fleet2.id in processed_fleets:
+                    continue
+                
+                # Check if fleets belong to different users
+                if fleet1.user_id == fleet2.user_id:
+                    continue
+                
+                # Check if at least one fleet is aggressive
+                if fleet1.stance != "aggressive" and fleet2.stance != "aggressive":
+                    continue
+                
+                # Determine attacker (aggressive fleet initiates)
+                if fleet1.stance == "aggressive":
+                    attacker = fleet1
+                    defender = fleet2
+                else:
+                    attacker = fleet2
+                    defender = fleet1
+                
+                # Process combat
+                battle_report = await process_combat(attacker, defender, game_state)
+                
+                if battle_report:
+                    processed_fleets.add(fleet1.id)
+                    processed_fleets.add(fleet2.id)
+                    logger.info(f"Combat at ({pos_key}): {attacker.name} vs {defender.name} - Winner: {battle_report.winner}")
+    
     # Process mining operations for stationary fleets
     stationary_fleets = await db.fleets.find({"movement_end_time": None}).to_list(1000)
     for fleet_data in stationary_fleets:
