@@ -471,7 +471,9 @@ class TheReCreationAPITester:
         )
         
         if success:
-            return self.log_test("Upgrade Werft", True, "Werft upgrade started")
+            # Process a tick to potentially complete the upgrade
+            self.make_request('POST', 'game/tick', {})
+            return self.log_test("Upgrade Werft", True, "Werft upgrade started and tick processed")
         else:
             return self.log_test("Upgrade Werft", False, f"Status: {status}, Data: {data}")
 
@@ -486,9 +488,32 @@ class TheReCreationAPITester:
         )
         
         if success:
-            return self.log_test("Upgrade Raumhafen", True, "Raumhafen upgrade started")
+            # Process a tick to potentially complete the upgrade
+            self.make_request('POST', 'game/tick', {})
+            return self.log_test("Upgrade Raumhafen", True, "Raumhafen upgrade started and tick processed")
         else:
             return self.log_test("Upgrade Raumhafen", False, f"Status: {status}, Data: {data}")
+
+    def test_check_building_levels_after_upgrade(self):
+        """Check building levels after upgrades"""
+        success, status, data = self.make_request('GET', 'game/buildings')
+        
+        if not success:
+            return self.log_test("Check Building Levels", False, f"Status: {status}, Data: {data}")
+        
+        # Check if we have the required buildings
+        buildings = {building['building_type']: building for building in data}
+        
+        werft_level = buildings.get('werft', {}).get('level', 0)
+        raumhafen_level = buildings.get('raumhafen', {}).get('level', 0)
+        
+        self.log_test("Check Building Levels", True, f"After upgrade - Werft Level: {werft_level}, Raumhafen Level: {raumhafen_level}")
+        
+        # Update building levels
+        self.werft_level = werft_level
+        self.raumhafen_level = raumhafen_level
+        
+        return True
 
     def test_create_prototype_for_combat(self):
         """Create a prototype for combat testing"""
