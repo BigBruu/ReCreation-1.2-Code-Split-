@@ -939,7 +939,7 @@ async def process_tick():
     
     # --- COMBAT PROCESSING ---
     # Get current game state for tick number
-    game_state = await get_or_create_game_state()
+    game_state = await init_game_state()
     
     # Find all stationary fleets and check for combat
     all_fleets = await db.fleets.find({"movement_end_time": None}).to_list(1000)
