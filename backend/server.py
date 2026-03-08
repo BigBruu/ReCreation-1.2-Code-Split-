@@ -1727,6 +1727,104 @@ async def move_fleet(move_data: MoveFleet, current_user: User = Depends(get_curr
         "ticks_needed": ticks_needed
     }
 
+# --- COMBAT SYSTEM ROUTES ---
+@api_router.post("/game/fleet/stance")
+async def set_fleet_stance(stance_data: SetFleetStance, current_user: User = Depends(get_current_user)):
+    """Set fleet stance (defensive or aggressive)"""
+    if stance_data.stance not in ["defensive", "aggressive"]:
+        raise HTTPException(status_code=400, detail="Invalid stance. Use 'defensive' or 'aggressive'")
+    
+    fleet = await db.fleets.find_one({"id": stance_data.fleet_id, "user_id": current_user.id})
+    if not fleet:
+        raise HTTPException(status_code=404, detail="Fleet not found")
+    
+    await db.fleets.update_one(
+        {"id": stance_data.fleet_id},
+        {"$set": {"stance": stance_data.stance}}
+    )
+    
+    return {
+        "message": f"Fleet stance set to {stance_data.stance}",
+        "fleet_id": stance_data.fleet_id,
+        "stance": stance_data.stance
+    }
+
+@api_router.get("/game/battle-reports")
+async def get_battle_reports(current_user: User = Depends(get_current_user)):
+    """Get battle reports involving the user"""
+    reports = await db.battle_reports.find({
+        "$or": [
+            {"attacker_user_id": current_user.id},
+            {"defender_user_id": current_user.id}
+        ]
+    }).sort("created_at", -1).to_list(50)
+    
+    # Add design names to ship lists
+    result = []
+    for report in reports:
+        report_data = report.copy()
+        report_data.pop("_id", None)
+        
+        # Enrich with design names
+        for key in ["attacker_ships_before", "attacker_ships_lost", "defender_ships_before", "defender_ships_lost"]:
+            enriched_ships = []
+            for ship in report_data.get(key, []):
+                design = await db.ship_designs.find_one({"id": ship["design_id"]})
+                ship_info = ship.copy()
+                ship_info["design_name"] = design["name"] if design else "Unbekannt"
+                enriched_ships.append(ship_info)
+            report_data[key] = enriched_ships
+        
+        result.append(report_data)
+    
+    return result
+
+@api_router.get("/game/debris-fields")
+async def get_debris_fields(current_user: User = Depends(get_current_user)):
+    """Get all debris fields in the universe"""
+    debris = await db.debris_fields.find({}).to_list(1000)
+    return [{"id": d["id"], "position": d["position"], "resource_type": d["resource_type"], "amount": d["amount"]} for d in debris]
+
+@api_router.post("/game/collect-debris")
+async def collect_debris(debris_id: str, current_user: User = Depends(get_current_user)):
+    """Collect debris with a fleet at the same position"""
+    debris = await db.debris_fields.find_one({"id": debris_id})
+    if not debris:
+        raise HTTPException(status_code=404, detail="Debris field not found")
+    
+    # Check if user has a fleet at this position
+    fleet = await db.fleets.find_one({
+        "user_id": current_user.id,
+        "position.x": debris["position"]["x"],
+        "position.y": debris["position"]["y"],
+        "movement_end_time": None
+    })
+    
+    if not fleet:
+        raise HTTPException(status_code=400, detail="No stationary fleet at debris position")
+    
+    # Add resources to user's first planet
+    user_planet = await db.planets.find_one({"owner_id": current_user.id})
+    if not user_planet:
+        raise HTTPException(status_code=400, detail="No planet to store resources")
+    
+    resource_type = debris["resource_type"]
+    amount = debris["amount"]
+    
+    await db.planets.update_one(
+        {"id": user_planet["id"]},
+        {"$inc": {f"resources.{resource_type}": amount}}
+    )
+    
+    # Remove debris field
+    await db.debris_fields.delete_one({"id": debris_id})
+    
+    return {
+        "message": f"Collected {amount} {resource_type} from debris",
+        "resource_type": resource_type,
+        "amount": amount
+    }
+
 @api_router.get("/game/rankings")
 async def get_rankings():
     users = await db.users.find().sort("points", -1).to_list(MAX_PLAYERS)
