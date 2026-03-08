@@ -1070,3 +1070,143 @@
 .planets-section .planet-resources span {
   @apply bg-gray-700 px-2 py-1 rounded;
 }
+
+
+/* Combat System Styles */
+.fleet-stance {
+  @apply flex items-center gap-2 my-2 py-2 border-t border-gray-700;
+}
+
+.fleet-stance label {
+  @apply text-sm text-gray-400;
+}
+
+.stance-select {
+  @apply bg-gray-800 border border-gray-600 rounded px-2 py-1 text-sm;
+}
+
+.stance-defensive {
+  @apply border-blue-500 text-blue-300;
+}
+
+.stance-aggressive {
+  @apply border-red-500 text-red-300;
+}
+
+.fleet-defensive {
+  @apply border-l-4 border-l-blue-500;
+}
+
+.fleet-aggressive {
+  @apply border-l-4 border-l-red-500;
+}
+
+/* Battle Reports */
+.battle-reports-section {
+  @apply mt-6 pt-6 border-t border-gray-700;
+}
+
+.battle-reports-section h4 {
+  @apply text-xl font-bold text-red-400 mb-4;
+}
+
+.battle-reports-list {
+  @apply space-y-4;
+}
+
+.battle-report {
+  @apply bg-gray-800 p-4 rounded border border-gray-700;
+}
+
+.report-attacker-won {
+  @apply border-l-4 border-l-red-500;
+}
+
+.report-defender-won {
+  @apply border-l-4 border-l-blue-500;
+}
+
+.report-header {
+  @apply flex justify-between items-center mb-3 pb-2 border-b border-gray-700;
+}
+
+.report-tick {
+  @apply text-sm font-semibold text-yellow-400;
+}
+
+.report-position {
+  @apply text-sm text-gray-400;
+}
+
+.report-combatants {
+  @apply flex items-center justify-between gap-4;
+}
+
+.combatant {
+  @apply flex-1 text-center space-y-1;
+}
+
+.combatant-name {
+  @apply block font-bold;
+}
+
+.combatant-fleet {
+  @apply block text-sm text-gray-400;
+}
+
+.combatant-cv {
+  @apply block text-sm;
+}
+
+.combatant-losses {
+  @apply block text-xs text-red-400;
+}
+
+.combatant.winner {
+  @apply text-green-400;
+}
+
+.combatant.loser {
+  @apply text-red-400;
+}
+
+.vs {
+  @apply text-xl font-bold text-gray-500;
+}
+
+.report-debris {
+  @apply mt-3 pt-3 border-t border-gray-700 text-sm text-yellow-400 text-center;
+}
+
+/* Debris Fields */
+.debris-section {
+  @apply mt-6 pt-6 border-t border-gray-700;
+}
+
+.debris-section h4 {
+  @apply text-xl font-bold text-yellow-400 mb-4;
+}
+
+.debris-list {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.debris-card {
+  @apply bg-gray-800 p-4 rounded border border-yellow-600 flex flex-col gap-2;
+}
+
+.debris-position {
+  @apply text-sm text-gray-400;
+}
+
+.debris-amount {
+  @apply text-lg font-semibold;
+}
+
+.collect-btn {
+  @apply mt-2;
+}
+
+.no-fleet-warning {
+  @apply text-sm text-gray-500 italic;
+}
