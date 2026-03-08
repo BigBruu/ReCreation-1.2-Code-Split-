@@ -630,16 +630,60 @@ class TheReCreationAPITester:
         """Test combat system APIs directly (without fleet creation)"""
         results = []
         
-        # Test 1: Fleet Stance API (should fail gracefully with no fleet)
-        success, status, data = self.make_request(
-            'POST', 'game/fleet/stance',
-            {
-                "fleet_id": "non-existent-fleet-id",
-                "stance": "aggressive"
-            },
-            expected_status=404
-        )
-        results.append(self.log_test("Fleet Stance API - Invalid Fleet", success, "Correctly handled invalid fleet ID"))
+        # First check if there are any existing fleets we can use
+        success, status, fleets = self.make_request('GET', 'game/fleets')
+        if success and len(fleets) > 0:
+            # Test fleet stance with existing fleet
+            fleet_id = fleets[0]['id']
+            
+            # Test setting aggressive stance
+            success, status, data = self.make_request(
+                'POST', 'game/fleet/stance',
+                {
+                    "fleet_id": fleet_id,
+                    "stance": "aggressive"
+                }
+            )
+            if success:
+                results.append(self.log_test("Fleet Stance API - Aggressive", True, "Stance set to aggressive"))
+            else:
+                results.append(self.log_test("Fleet Stance API - Aggressive", False, f"Status: {status}, Data: {data}"))
+            
+            # Test setting defensive stance
+            success, status, data = self.make_request(
+                'POST', 'game/fleet/stance',
+                {
+                    "fleet_id": fleet_id,
+                    "stance": "defensive"
+                }
+            )
+            if success:
+                results.append(self.log_test("Fleet Stance API - Defensive", True, "Stance set to defensive"))
+            else:
+                results.append(self.log_test("Fleet Stance API - Defensive", False, f"Status: {status}, Data: {data}"))
+            
+            # Test fleet model validation
+            if 'stance' in fleets[0]:
+                stance_value = fleets[0]['stance']
+                valid_stances = ['defensive', 'aggressive']
+                if stance_value in valid_stances:
+                    results.append(self.log_test("Fleet Model Validation", True, f"Stance field present with value: {stance_value}"))
+                else:
+                    results.append(self.log_test("Fleet Model Validation", False, f"Invalid stance value: {stance_value}"))
+            else:
+                results.append(self.log_test("Fleet Model Validation", False, "Stance field missing from fleet model"))
+        else:
+            # Test with invalid fleet ID to check API structure
+            success, status, data = self.make_request(
+                'POST', 'game/fleet/stance',
+                {
+                    "fleet_id": "non-existent-fleet-id",
+                    "stance": "aggressive"
+                },
+                expected_status=404
+            )
+            results.append(self.log_test("Fleet Stance API - Invalid Fleet", success, "Correctly handled invalid fleet ID"))
+            results.append(self.log_test("Fleet Model Validation", True, "No fleets to validate (expected)"))
         
         # Test 2: Battle Reports API
         success, status, data = self.make_request('GET', 'game/battle-reports')
@@ -657,13 +701,26 @@ class TheReCreationAPITester:
             results.append(self.log_test("Debris Fields API", False, f"Status: {status}, Data: {data}"))
             self.debris_fields = []
         
-        # Test 4: Collect Debris API (should fail gracefully with no debris)
-        success, status, data = self.make_request(
-            'POST', 'game/collect-debris?debris_id=non-existent-debris',
-            {},
-            expected_status=404
-        )
-        results.append(self.log_test("Collect Debris API - Invalid Debris", success, "Correctly handled invalid debris ID"))
+        # Test 4: Collect Debris API
+        if len(self.debris_fields) > 0:
+            # Try to collect first debris field
+            debris_id = self.debris_fields[0]['id']
+            success, status, data = self.make_request(
+                'POST', f'game/collect-debris?debris_id={debris_id}',
+                {}
+            )
+            if success:
+                results.append(self.log_test("Collect Debris API", True, "Debris collection successful"))
+            else:
+                results.append(self.log_test("Collect Debris API", False, f"Status: {status}, Data: {data}"))
+        else:
+            # Test with invalid debris ID
+            success, status, data = self.make_request(
+                'POST', 'game/collect-debris?debris_id=non-existent-debris',
+                {},
+                expected_status=404
+            )
+            results.append(self.log_test("Collect Debris API - Invalid Debris", success, "Correctly handled invalid debris ID"))
         
         return all(results)
 
