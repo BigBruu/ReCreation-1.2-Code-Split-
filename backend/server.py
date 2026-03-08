@@ -659,6 +659,168 @@ async def init_game_state():
         return game_state
     return GameState(**existing_state)
 
+# --- COMBAT SYSTEM FUNCTIONS ---
+async def calculate_fleet_combat_value(fleet: Fleet) -> int:
+    """Calculate total combat value of a fleet"""
+    total_combat_value = 0
+    for ship_group in fleet.ships:
+        design = await db.ship_designs.find_one({"id": ship_group["design_id"]})
+        if design:
+            design_obj = ShipDesign(**design)
+            combat_value = design_obj.calculated_stats.get("combat_value", 0)
+            total_combat_value += combat_value * ship_group["quantity"]
+    return total_combat_value
+
+async def calculate_fleet_build_cost(fleet: Fleet) -> Dict[str, int]:
+    """Calculate total build cost of all ships in a fleet"""
+    total_cost = {"food": 0, "metal": 0, "hydrogen": 0}
+    for ship_group in fleet.ships:
+        design = await db.ship_designs.find_one({"id": ship_group["design_id"]})
+        if design:
+            design_obj = ShipDesign(**design)
+            build_cost = design_obj.calculated_stats.get("build_cost", {})
+            for resource in ["food", "metal", "hydrogen"]:
+                total_cost[resource] += build_cost.get(resource, 0) * ship_group["quantity"]
+    return total_cost
+
+async def process_combat(attacker_fleet: Fleet, defender_fleet: Fleet, game_state: GameState) -> Optional[BattleReport]:
+    """Process combat between two fleets. Returns battle report."""
+    # Get usernames
+    attacker_user = await db.users.find_one({"id": attacker_fleet.user_id})
+    defender_user = await db.users.find_one({"id": defender_fleet.user_id})
+    
+    if not attacker_user or not defender_user:
+        return None
+    
+    # Calculate combat values
+    attacker_cv = await calculate_fleet_combat_value(attacker_fleet)
+    defender_cv = await calculate_fleet_combat_value(defender_fleet)
+    
+    # Store ships before combat
+    attacker_ships_before = [s.copy() for s in attacker_fleet.ships]
+    defender_ships_before = [s.copy() for s in defender_fleet.ships]
+    
+    # Determine winner (higher combat value wins)
+    total_cv = attacker_cv + defender_cv
+    if total_cv == 0:
+        return None  # No combat if no combat value
+    
+    winner = "attacker" if attacker_cv > defender_cv else "defender"
+    
+    # Calculate losses proportionally
+    # Loser loses more ships proportionally to the difference
+    if winner == "attacker":
+        # Attacker wins - defender loses more
+        defender_loss_ratio = min(1.0, attacker_cv / max(1, defender_cv) * 0.5)
+        attacker_loss_ratio = min(0.8, defender_cv / max(1, attacker_cv) * 0.3)
+    else:
+        # Defender wins - attacker loses more
+        attacker_loss_ratio = min(1.0, defender_cv / max(1, attacker_cv) * 0.5)
+        defender_loss_ratio = min(0.8, attacker_cv / max(1, defender_cv) * 0.3)
+    
+    # Apply losses to ships
+    attacker_ships_lost = []
+    defender_ships_lost = []
+    
+    # Process attacker losses
+    new_attacker_ships = []
+    for ship_group in attacker_fleet.ships:
+        lost_quantity = int(ship_group["quantity"] * attacker_loss_ratio)
+        remaining = ship_group["quantity"] - lost_quantity
+        if lost_quantity > 0:
+            attacker_ships_lost.append({"design_id": ship_group["design_id"], "quantity": lost_quantity})
+        if remaining > 0:
+            new_attacker_ships.append({"design_id": ship_group["design_id"], "quantity": remaining})
+    
+    # Process defender losses
+    new_defender_ships = []
+    for ship_group in defender_fleet.ships:
+        lost_quantity = int(ship_group["quantity"] * defender_loss_ratio)
+        remaining = ship_group["quantity"] - lost_quantity
+        if lost_quantity > 0:
+            defender_ships_lost.append({"design_id": ship_group["design_id"], "quantity": lost_quantity})
+        if remaining > 0:
+            new_defender_ships.append({"design_id": ship_group["design_id"], "quantity": remaining})
+    
+    # Calculate debris from destroyed ships (20% of build costs)
+    total_debris_cost = {"food": 0, "metal": 0, "hydrogen": 0}
+    
+    for lost_ship in attacker_ships_lost:
+        design = await db.ship_designs.find_one({"id": lost_ship["design_id"]})
+        if design:
+            design_obj = ShipDesign(**design)
+            build_cost = design_obj.calculated_stats.get("build_cost", {})
+            for resource in ["food", "metal", "hydrogen"]:
+                total_debris_cost[resource] += int(build_cost.get(resource, 0) * lost_ship["quantity"] * 0.2)
+    
+    for lost_ship in defender_ships_lost:
+        design = await db.ship_designs.find_one({"id": lost_ship["design_id"]})
+        if design:
+            design_obj = ShipDesign(**design)
+            build_cost = design_obj.calculated_stats.get("build_cost", {})
+            for resource in ["food", "metal", "hydrogen"]:
+                total_debris_cost[resource] += int(build_cost.get(resource, 0) * lost_ship["quantity"] * 0.2)
+    
+    # Create debris field with random resource type
+    debris_info = None
+    total_debris = sum(total_debris_cost.values())
+    if total_debris > 0:
+        import random
+        resource_types = ["food", "metal", "hydrogen"]
+        debris_resource = random.choice(resource_types)
+        debris_amount = total_debris
+        
+        debris_field = DebrisField(
+            position=attacker_fleet.position,
+            resource_type=debris_resource,
+            amount=debris_amount
+        )
+        await db.debris_fields.insert_one(debris_field.dict())
+        debris_info = {"resource_type": debris_resource, "amount": debris_amount}
+    
+    # Update fleets in database
+    if len(new_attacker_ships) > 0:
+        await db.fleets.update_one(
+            {"id": attacker_fleet.id},
+            {"$set": {"ships": new_attacker_ships}}
+        )
+    else:
+        # Fleet destroyed
+        await db.fleets.delete_one({"id": attacker_fleet.id})
+    
+    if len(new_defender_ships) > 0:
+        await db.fleets.update_one(
+            {"id": defender_fleet.id},
+            {"$set": {"ships": new_defender_ships}}
+        )
+    else:
+        # Fleet destroyed
+        await db.fleets.delete_one({"id": defender_fleet.id})
+    
+    # Create battle report
+    battle_report = BattleReport(
+        tick=game_state.current_tick,
+        position=attacker_fleet.position,
+        attacker_user_id=attacker_fleet.user_id,
+        attacker_username=attacker_user["username"],
+        attacker_fleet_name=attacker_fleet.name,
+        attacker_combat_value=attacker_cv,
+        attacker_ships_before=attacker_ships_before,
+        attacker_ships_lost=attacker_ships_lost,
+        defender_user_id=defender_fleet.user_id,
+        defender_username=defender_user["username"],
+        defender_fleet_name=defender_fleet.name,
+        defender_combat_value=defender_cv,
+        defender_ships_before=defender_ships_before,
+        defender_ships_lost=defender_ships_lost,
+        winner=winner,
+        debris_created=debris_info
+    )
+    
+    await db.battle_reports.insert_one(battle_report.dict())
+    
+    return battle_report
+
 async def process_tick():
     """Process authentic game tick - movement, mining, research, and buildings"""
     config = await get_game_config()
