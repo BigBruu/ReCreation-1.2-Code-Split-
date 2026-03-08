@@ -103,6 +103,14 @@
 #====================================================================================================
 
 ## user_problem_statement: 
+COMBAT SYSTEM TESTING REQUEST (IN PROGRESS ✅): 
+Teste das neue Kampfsystem für das Spiel "TheReCreation" mit folgenden Testfällen:
+1. POST /api/game/fleet/stance - Teste das Setzen der Flotten-Haltung ✅
+2. GET /api/game/battle-reports - Kampfberichte abrufen (kann leer sein) ✅
+3. GET /api/game/debris-fields - Trümmerfelder abrufen (kann leer sein) ✅
+4. POST /api/game/collect-debris - Trümmer sammeln (mit Query-Param debris_id) ✅
+5. Validiere Fleet-Model - Prüfe ob stance-Feld in Flotten enthalten ist ✅
+
 BUILDING SYSTEM TESTING REQUEST (COMPLETED ✅): 
 Teste das neue Gebäude-System für das Spiel "TheReCreation" mit folgenden Testfällen:
 1. GET /api/game/buildings - Liste alle Gebäude mit Leveln ✅
