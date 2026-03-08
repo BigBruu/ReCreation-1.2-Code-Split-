@@ -282,6 +282,7 @@ Vorherige Observatorium Verbesserungen (ABGESCHLOSSEN):
   completed_focus:
     - "Automatisches Tick-System implementieren und testen"
     - "Gebäude-System für TheReCreation implementieren und testen"
+    - "Kampfsystem für TheReCreation implementieren und testen"
 
 ## agent_communication:
     - agent: "main"
