@@ -28,6 +28,8 @@ const GameInterface = () => {
   const [showShipCalculator, setShowShipCalculator] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [userBuildings, setUserBuildings] = useState([]);
+  const [battleReports, setBattleReports] = useState([]);
+  const [debrisFields, setDebrisFields] = useState([]);
 
   useEffect(() => {
     fetchGameData();
