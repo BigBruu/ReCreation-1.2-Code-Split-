@@ -422,6 +422,246 @@ class TheReCreationAPITester:
         else:
             return self.log_test("Get Rankings", False, f"Status: {status}, Data: {data}")
 
+    def test_combat_system_login(self):
+        """Login with specific test credentials for combat system testing"""
+        success, status, data = self.make_request(
+            'POST', 'login',
+            {
+                "username": "TestUser1",
+                "password": "password123"
+            },
+            expected_status=200
+        )
+        
+        if success and 'access_token' in data:
+            self.token = data['access_token']
+            return self.log_test("Combat System Login", True, "Logged in as TestUser1")
+        else:
+            return self.log_test("Combat System Login", False, f"Status: {status}, Data: {data}")
+
+    def test_buildings_api(self):
+        """Test buildings API for combat system prerequisites"""
+        success, status, data = self.make_request('GET', 'game/buildings')
+        
+        if not success:
+            return self.log_test("Get Buildings", False, f"Status: {status}, Data: {data}")
+        
+        # Check if we have the required buildings
+        buildings = {building['building_type']: building for building in data}
+        
+        werft_level = buildings.get('werft', {}).get('level', 0)
+        raumhafen_level = buildings.get('raumhafen', {}).get('level', 0)
+        
+        self.log_test("Get Buildings", True, f"Werft Level: {werft_level}, Raumhafen Level: {raumhafen_level}")
+        
+        # Store building levels for later use
+        self.werft_level = werft_level
+        self.raumhafen_level = raumhafen_level
+        
+        return True
+
+    def test_upgrade_werft(self):
+        """Upgrade Werft to Level 1+ if needed"""
+        if hasattr(self, 'werft_level') and self.werft_level >= 1:
+            return self.log_test("Upgrade Werft", True, f"Werft already at level {self.werft_level}")
+        
+        success, status, data = self.make_request(
+            'POST', 'game/buildings/upgrade',
+            {"building_type": "werft"}
+        )
+        
+        if success:
+            return self.log_test("Upgrade Werft", True, "Werft upgrade started")
+        else:
+            return self.log_test("Upgrade Werft", False, f"Status: {status}, Data: {data}")
+
+    def test_upgrade_raumhafen(self):
+        """Upgrade Raumhafen to Level 1+ if needed"""
+        if hasattr(self, 'raumhafen_level') and self.raumhafen_level >= 1:
+            return self.log_test("Upgrade Raumhafen", True, f"Raumhafen already at level {self.raumhafen_level}")
+        
+        success, status, data = self.make_request(
+            'POST', 'game/buildings/upgrade',
+            {"building_type": "raumhafen"}
+        )
+        
+        if success:
+            return self.log_test("Upgrade Raumhafen", True, "Raumhafen upgrade started")
+        else:
+            return self.log_test("Upgrade Raumhafen", False, f"Status: {status}, Data: {data}")
+
+    def test_create_prototype_for_combat(self):
+        """Create a prototype for combat testing"""
+        success, status, data = self.make_request(
+            'POST', 'game/ship-design',
+            {
+                "name": "Combat Fighter",
+                "drive_type": "segel",
+                "drive_level": 1,
+                "drive_quantity": 1,
+                "shield_type": "stahl",
+                "shield_level": 1,
+                "shield_quantity": 1,
+                "weapon_type": "laser",
+                "weapon_level": 1,
+                "weapon_quantity": 1
+            }
+        )
+        
+        if success and 'id' in data:
+            self.combat_design_id = data['id']
+            return self.log_test("Create Combat Prototype", True, f"Design ID: {self.combat_design_id}")
+        else:
+            return self.log_test("Create Combat Prototype", False, f"Status: {status}, Data: {data}")
+
+    def test_build_combat_ships(self):
+        """Build ships for combat testing"""
+        if not hasattr(self, 'combat_design_id'):
+            return self.log_test("Build Combat Ships", False, "No combat design available")
+        
+        # Get user planets
+        success, status, planets = self.make_request('GET', 'game/planets')
+        if not success or len(planets) == 0:
+            return self.log_test("Build Combat Ships", False, "No planets available")
+        
+        planet_id = planets[0]['id']
+        
+        success, status, data = self.make_request(
+            'POST', 'game/build-ships',
+            {
+                "planet_id": planet_id,
+                "design_id": self.combat_design_id,
+                "quantity": 5
+            }
+        )
+        
+        if success:
+            self.combat_planet_id = planet_id
+            return self.log_test("Build Combat Ships", True, "5 combat ships built")
+        else:
+            return self.log_test("Build Combat Ships", False, f"Status: {status}, Data: {data}")
+
+    def test_create_combat_fleet(self):
+        """Create a fleet for combat testing"""
+        if not hasattr(self, 'combat_design_id') or not hasattr(self, 'combat_planet_id'):
+            return self.log_test("Create Combat Fleet", False, "Prerequisites not met")
+        
+        success, status, data = self.make_request(
+            'POST', 'game/create-fleet',
+            {
+                "planet_id": self.combat_planet_id,
+                "fleet_name": "Combat Fleet Alpha",
+                "ships": [{"design_id": self.combat_design_id, "quantity": 3}]
+            }
+        )
+        
+        if success and 'id' in data:
+            self.combat_fleet_id = data['id']
+            return self.log_test("Create Combat Fleet", True, f"Fleet ID: {self.combat_fleet_id}")
+        else:
+            return self.log_test("Create Combat Fleet", False, f"Status: {status}, Data: {data}")
+
+    def test_fleet_stance_api(self):
+        """Test POST /api/game/fleet/stance - Set fleet stance"""
+        if not hasattr(self, 'combat_fleet_id'):
+            return self.log_test("Fleet Stance API", False, "No combat fleet available")
+        
+        # Test setting aggressive stance
+        success, status, data = self.make_request(
+            'POST', 'game/fleet/stance',
+            {
+                "fleet_id": self.combat_fleet_id,
+                "stance": "aggressive"
+            }
+        )
+        
+        if success:
+            result1 = self.log_test("Fleet Stance - Aggressive", True, "Stance set to aggressive")
+        else:
+            result1 = self.log_test("Fleet Stance - Aggressive", False, f"Status: {status}, Data: {data}")
+        
+        # Test setting defensive stance
+        success, status, data = self.make_request(
+            'POST', 'game/fleet/stance',
+            {
+                "fleet_id": self.combat_fleet_id,
+                "stance": "defensive"
+            }
+        )
+        
+        if success:
+            result2 = self.log_test("Fleet Stance - Defensive", True, "Stance set to defensive")
+        else:
+            result2 = self.log_test("Fleet Stance - Defensive", False, f"Status: {status}, Data: {data}")
+        
+        return result1 and result2
+
+    def test_battle_reports_api(self):
+        """Test GET /api/game/battle-reports - Get battle reports"""
+        success, status, data = self.make_request('GET', 'game/battle-reports')
+        
+        if success:
+            if isinstance(data, list):
+                return self.log_test("Battle Reports API", True, f"Found {len(data)} battle reports")
+            else:
+                return self.log_test("Battle Reports API", True, "Battle reports API working (empty)")
+        else:
+            return self.log_test("Battle Reports API", False, f"Status: {status}, Data: {data}")
+
+    def test_debris_fields_api(self):
+        """Test GET /api/game/debris-fields - Get debris fields"""
+        success, status, data = self.make_request('GET', 'game/debris-fields')
+        
+        if success:
+            if isinstance(data, list):
+                self.debris_fields = data
+                return self.log_test("Debris Fields API", True, f"Found {len(data)} debris fields")
+            else:
+                self.debris_fields = []
+                return self.log_test("Debris Fields API", True, "Debris fields API working (empty)")
+        else:
+            return self.log_test("Debris Fields API", False, f"Status: {status}, Data: {data}")
+
+    def test_collect_debris_api(self):
+        """Test POST /api/game/collect-debris - Collect debris"""
+        if not hasattr(self, 'debris_fields') or len(self.debris_fields) == 0:
+            return self.log_test("Collect Debris API", True, "No debris fields to collect (expected)")
+        
+        # Try to collect first debris field
+        debris_id = self.debris_fields[0]['id']
+        
+        success, status, data = self.make_request(
+            'POST', f'game/collect-debris?debris_id={debris_id}',
+            {}
+        )
+        
+        if success:
+            return self.log_test("Collect Debris API", True, "Debris collection successful")
+        else:
+            return self.log_test("Collect Debris API", False, f"Status: {status}, Data: {data}")
+
+    def test_fleet_model_stance_field(self):
+        """Validate Fleet Model - Check if stance field is included in fleets"""
+        success, status, data = self.make_request('GET', 'game/fleets')
+        
+        if not success:
+            return self.log_test("Fleet Model Validation", False, f"Could not get fleets: {status}")
+        
+        if len(data) == 0:
+            return self.log_test("Fleet Model Validation", True, "No fleets to validate (expected)")
+        
+        # Check if stance field exists in fleet data
+        fleet = data[0]
+        if 'stance' in fleet:
+            stance_value = fleet['stance']
+            valid_stances = ['defensive', 'aggressive']
+            if stance_value in valid_stances:
+                return self.log_test("Fleet Model Validation", True, f"Stance field present with value: {stance_value}")
+            else:
+                return self.log_test("Fleet Model Validation", False, f"Invalid stance value: {stance_value}")
+        else:
+            return self.log_test("Fleet Model Validation", False, "Stance field missing from fleet model")
+
     def test_invalid_endpoints(self):
         """Test some invalid scenarios"""
         # Test invalid login
