@@ -283,6 +283,51 @@ const GameInterface = () => {
     }
   };
 
+  const setFleetStance = async (fleetId, stance) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/game/fleet/stance`, {
+        fleet_id: fleetId,
+        stance: stance
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ 
+        title: "Erfolg!", 
+        description: `Flotten-Haltung auf "${stance === 'aggressive' ? 'Aggressiv' : 'Defensiv'}" gesetzt` 
+      });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Haltung konnte nicht geändert werden',
+        variant: "destructive" 
+      });
+    }
+  };
+
+  const collectDebris = async (debrisId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/game/collect-debris?debris_id=${debrisId}`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast({ 
+        title: "Trümmer gesammelt!", 
+        description: response.data.message 
+      });
+      fetchGameData();
+    } catch (error) {
+      toast({ 
+        title: "Fehler", 
+        description: error.response?.data?.detail || 'Trümmer konnten nicht gesammelt werden',
+        variant: "destructive" 
+      });
+    }
+  };
+
   const moveFleet = async (fleetId) => {
     try {
       const xInput = document.getElementById(`fleet-${fleetId}-x`);
