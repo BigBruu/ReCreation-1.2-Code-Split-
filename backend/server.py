@@ -251,7 +251,40 @@ class Fleet(BaseModel):
     movement_start_time: Optional[datetime] = None
     movement_end_time: Optional[datetime] = None
     fleet_speed: int = 0  # pc per tick
+    stance: str = "defensive"  # "defensive" or "aggressive"
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+# --- COMBAT SYSTEM MODELS ---
+class DebrisField(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    position: Position
+    resource_type: str  # "food", "metal", or "hydrogen"
+    amount: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class BattleReport(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    tick: int
+    position: Position
+    attacker_user_id: str
+    attacker_username: str
+    attacker_fleet_name: str
+    attacker_combat_value: int
+    attacker_ships_before: List[Dict[str, Any]]
+    attacker_ships_lost: List[Dict[str, Any]]
+    defender_user_id: str
+    defender_username: str
+    defender_fleet_name: str
+    defender_combat_value: int
+    defender_ships_before: List[Dict[str, Any]]
+    defender_ships_lost: List[Dict[str, Any]]
+    winner: str  # "attacker" or "defender"
+    debris_created: Optional[Dict[str, Any]] = None  # {"resource_type": "metal", "amount": 1000}
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class SetFleetStance(BaseModel):
+    fleet_id: str
+    stance: str  # "defensive" or "aggressive"
 
 class GameState(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
