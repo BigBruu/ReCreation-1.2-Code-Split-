@@ -688,40 +688,42 @@ class TheReCreationAPITester:
         return result1 and result2
 
 def main():
-    print("🚀 Starting TheReCreation Observatory & Fleet API Tests")
+    print("🚀 Starting TheReCreation Combat System API Tests")
     print("=" * 60)
     
     tester = TheReCreationAPITester()
     
-    # Run authentication tests
-    print("\n📝 Authentication Tests:")
-    # First try to get admin access and create invite code
-    if not tester.test_admin_login_and_create_invite():
-        print("❌ Admin access failed, trying with existing user credentials")
-        # Try some common test credentials
-        test_users = [
-            ("testuser", "testpass"),
-            ("admin", "admin"),
-            ("user1", "password"),
-            ("test", "test123")
-        ]
-        
-        login_success = False
-        for username, password in test_users:
-            tester.test_username = username
-            tester.test_password = password
-            if tester.test_user_login():
-                login_success = True
-                break
-        
-        if not login_success:
-            print("❌ Could not authenticate with any credentials, stopping tests")
-            return 1
-    else:
-        # Admin access worked, now register new user
-        if not tester.test_user_registration():
-            print("❌ Registration failed even with invite code, stopping tests")
-            return 1
+    # Run authentication tests with specific combat system credentials
+    print("\n📝 Combat System Authentication:")
+    if not tester.test_combat_system_login():
+        print("❌ Combat system login failed, trying admin access")
+        # Try admin access as fallback
+        if not tester.test_admin_login_and_create_invite():
+            print("❌ Admin access failed, trying with existing user credentials")
+            # Try some common test credentials
+            test_users = [
+                ("testuser", "testpass"),
+                ("admin", "admin"),
+                ("user1", "password"),
+                ("test", "test123")
+            ]
+            
+            login_success = False
+            for username, password in test_users:
+                tester.test_username = username
+                tester.test_password = password
+                if tester.test_user_login():
+                    login_success = True
+                    break
+            
+            if not login_success:
+                print("❌ Could not authenticate with any credentials, stopping tests")
+                return 1
+        else:
+            # Admin access worked, now register new user
+            if not tester.test_user_registration():
+                print("❌ Registration failed even with invite code, stopping tests")
+                return 1
     
     if not tester.test_get_user_profile():
         print("❌ Profile fetch failed, stopping tests")
@@ -731,13 +733,32 @@ def main():
     print("\n🎮 Game State Tests:")
     tester.test_game_state()
     tester.test_user_spaceport()
-    tester.test_rankings()
     
-    # Run Observatory API tests (main focus)
+    # Run building system tests (prerequisites for combat)
+    print("\n🏗️ Building System Tests (Combat Prerequisites):")
+    tester.test_buildings_api()
+    tester.test_upgrade_werft()
+    tester.test_upgrade_raumhafen()
+    
+    # Run ship design and fleet creation tests
+    print("\n🚀 Ship Design & Fleet Creation Tests:")
+    tester.test_create_prototype_for_combat()
+    tester.test_build_combat_ships()
+    tester.test_create_combat_fleet()
+    
+    # Run Combat System API tests (main focus)
+    print("\n⚔️ Combat System API Tests:")
+    tester.test_fleet_stance_api()
+    tester.test_battle_reports_api()
+    tester.test_debris_fields_api()
+    tester.test_collect_debris_api()
+    tester.test_fleet_model_stance_field()
+    
+    # Run Observatory API tests
     print("\n🔭 Observatory API Tests:")
     tester.test_observatory_api()
     
-    # Run Fleet API tests (main focus)
+    # Run Fleet API tests
     print("\n🚀 Fleet API Tests:")
     tester.test_fleet_apis()
     tester.test_fleet_movement_errors()
@@ -751,6 +772,7 @@ def main():
     tester.test_invalid_endpoints()
     
     tester.test_process_tick()
+    tester.test_rankings()
     
     # Print final results
     print("\n" + "=" * 60)
