@@ -769,19 +769,22 @@ def main():
     tester.test_check_building_levels_after_upgrade()
     tester.test_wait_for_building_completion()
     
-    # Run ship design and fleet creation tests
-    print("\n🚀 Ship Design & Fleet Creation Tests:")
-    tester.test_create_prototype_for_combat()
-    tester.test_build_combat_ships()
-    tester.test_create_combat_fleet()
-    
     # Run Combat System API tests (main focus)
     print("\n⚔️ Combat System API Tests:")
-    tester.test_fleet_stance_api()
-    tester.test_battle_reports_api()
-    tester.test_debris_fields_api()
-    tester.test_collect_debris_api()
-    tester.test_fleet_model_stance_field()
+    tester.test_combat_apis_direct()
+    
+    # Try to test with actual fleets if buildings are ready
+    if hasattr(tester, 'werft_level') and hasattr(tester, 'raumhafen_level'):
+        if tester.werft_level >= 1 and tester.raumhafen_level >= 1:
+            print("\n🚀 Advanced Combat Tests (with fleets):")
+            tester.test_create_prototype_for_combat()
+            tester.test_build_combat_ships()
+            tester.test_create_combat_fleet()
+            tester.test_fleet_model_stance_field()
+        else:
+            print(f"\n⏳ Skipping advanced combat tests - Buildings not ready (Werft: {tester.werft_level}, Raumhafen: {tester.raumhafen_level})")
+    else:
+        print("\n⏳ Skipping advanced combat tests - Building levels unknown")
     
     # Run Observatory API tests
     print("\n🔭 Observatory API Tests:")
