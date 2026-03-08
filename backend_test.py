@@ -515,6 +515,46 @@ class TheReCreationAPITester:
         
         return True
 
+    def test_wait_for_building_completion(self):
+        """Process ticks to complete building upgrades"""
+        # Process multiple ticks to complete building upgrades
+        # Werft needs 15 ticks, Raumhafen needs 20 ticks
+        max_ticks_needed = 25  # A bit more than needed
+        
+        for i in range(max_ticks_needed):
+            tick_success, tick_status, tick_data = self.make_request('POST', 'game/tick', {})
+            if not tick_success:
+                return self.log_test("Wait for Building Completion", False, f"Tick {i+1} failed: {tick_status}")
+            
+            # Check building levels every 5 ticks
+            if (i + 1) % 5 == 0:
+                success, status, data = self.make_request('GET', 'game/buildings')
+                if success:
+                    buildings = {building['building_type']: building for building in data}
+                    werft_level = buildings.get('werft', {}).get('level', 0)
+                    raumhafen_level = buildings.get('raumhafen', {}).get('level', 0)
+                    
+                    if werft_level >= 1 and raumhafen_level >= 1:
+                        self.werft_level = werft_level
+                        self.raumhafen_level = raumhafen_level
+                        return self.log_test("Wait for Building Completion", True, f"Buildings completed after {i+1} ticks - Werft: {werft_level}, Raumhafen: {raumhafen_level}")
+        
+        # Final check
+        success, status, data = self.make_request('GET', 'game/buildings')
+        if success:
+            buildings = {building['building_type']: building for building in data}
+            werft_level = buildings.get('werft', {}).get('level', 0)
+            raumhafen_level = buildings.get('raumhafen', {}).get('level', 0)
+            self.werft_level = werft_level
+            self.raumhafen_level = raumhafen_level
+            
+            if werft_level >= 1 and raumhafen_level >= 1:
+                return self.log_test("Wait for Building Completion", True, f"Buildings completed - Werft: {werft_level}, Raumhafen: {raumhafen_level}")
+            else:
+                return self.log_test("Wait for Building Completion", False, f"Buildings still not ready - Werft: {werft_level}, Raumhafen: {raumhafen_level}")
+        else:
+            return self.log_test("Wait for Building Completion", False, "Could not check final building status")
+
     def test_create_prototype_for_combat(self):
         """Create a prototype for combat testing"""
         success, status, data = self.make_request(
