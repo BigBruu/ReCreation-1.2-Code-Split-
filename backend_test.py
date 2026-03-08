@@ -805,6 +805,7 @@ def main():
     tester.test_upgrade_werft()
     tester.test_upgrade_raumhafen()
     tester.test_check_building_levels_after_upgrade()
+    tester.test_wait_for_building_completion()
     
     # Run ship design and fleet creation tests
     print("\n🚀 Ship Design & Fleet Creation Tests:")
