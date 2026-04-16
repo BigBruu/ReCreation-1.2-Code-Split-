@@ -1,0 +1,55 @@
+modules = ["python-3.12", "nodejs-20", "web"]
+[agent]
+expertMode = true
+
+[nix]
+channel = "stable-25_05"
+packages = ["cargo", "libiconv", "libxcrypt", "rustc"]
+
+[userenv]
+
+[userenv.shared]
+MONGO_URL = "mongodb://localhost:27017"
+DB_NAME = "thecreation_authentic"
+REACT_APP_BACKEND_URL = "https://5a06de9e-ef2b-402b-b5da-ab3665bc459e-00-1b6cy4fmecsoq.worf.replit.dev"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "bash start.sh"
+waitForPort = 5000
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[ports]]
+localPort = 3000
+externalPort = 3000
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
+exposeLocalhost = true
+
+[deployment]
+deploymentTarget = "vm"
+run = ["bash", "start.sh"]
