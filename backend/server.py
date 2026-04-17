@@ -341,6 +341,13 @@ class UpdateGameConfig(BaseModel):
     colonization_time_hours: Optional[int] = None
     noob_protection_hours: Optional[int] = None
 
+class NewRoundConfig(BaseModel):
+    resources_per_planet: int       # Ressourcen pro Planet (z.B. 10_000_000)
+    planet_count: int               # Anzahl Planeten mit Ressourcen
+    universe_size: int              # Spielfeldgröße 15-50
+    tick_duration: int              # Sekunden pro Tick 10-60
+    max_players: int                # Maximale Spieleranzahl
+
 class UserCreateWithInvite(BaseModel):
     username: str
     email: str
@@ -601,30 +608,41 @@ def calculate_ship_stats(design: CreateShipDesign) -> Dict[str, Any]:
         "build_time_ticks": build_time_ticks
     }
 
-async def generate_universe():
-    """Generate planets across the universe"""
+async def generate_universe(
+    explicit_planet_count: Optional[int] = None,
+    explicit_resource_amount: Optional[int] = None,
+):
+    """Generate planets across the universe.
+    
+    When called from /admin/new-round the explicit values override the config defaults.
+    """
     existing_planets = await db.planets.count_documents({})
     if existing_planets > 0:
         return  # Universe already generated
-    
+
     config = await get_game_config()
     universe_size = config.universe_size
-    min_resources = config.min_planet_resources
-    max_resources = config.max_planet_resources
-    
+    min_resources = explicit_resource_amount or config.min_planet_resources
+    max_resources = explicit_resource_amount or config.max_planet_resources
+
     # Map planet types to resource names (NO SILICON)
     planet_type_to_name = {
         "green": "Nahrung",
-        "blue": "Wasserstoff", 
+        "blue": "Wasserstoff",
         "brown": "Metall",
         "orange": "Wasserstoff"
     }
-    
+
     planets_to_create = []
     occupied_positions: set = set()  # Punkt 11: O(1) Kollisionsprüfung statt O(n²)
 
-    # Generate planets based on universe size
-    planet_count = int((universe_size * universe_size) * 0.08)  # ~8% of fields have planets
+    # Explicit count wins; otherwise derive from universe area (~8 %)
+    planet_count = explicit_planet_count or int((universe_size * universe_size) * 0.08)
+
+    # Clamp to avoid placing more planets than there are fields
+    max_fields = universe_size * universe_size
+    planet_count = min(planet_count, max_fields)
+
     for i in range(planet_count):
         x = random.randint(0, universe_size - 1)
         y = random.randint(0, universe_size - 1)
@@ -1330,6 +1348,66 @@ async def reset_game(_: dict = Depends(require_admin)):
     invalidate_config_cache()
     await init_game_state()
     return {"message": "Game reset successfully"}
+
+@api_router.post("/admin/new-round")
+async def start_new_round(cfg: NewRoundConfig, _: dict = Depends(require_admin)):
+    """Start a brand-new round with custom settings (admin only)"""
+    # Validate ranges
+    if not (15 <= cfg.universe_size <= 50):
+        raise HTTPException(status_code=422, detail="Spielfeldgröße muss zwischen 15 und 50 liegen")
+    if not (10 <= cfg.tick_duration <= 60):
+        raise HTTPException(status_code=422, detail="Tick-Dauer muss zwischen 10 und 60 Sekunden liegen")
+    if cfg.planet_count < 1:
+        raise HTTPException(status_code=422, detail="Planetenanzahl muss mindestens 1 sein")
+    if cfg.resources_per_planet < 1:
+        raise HTTPException(status_code=422, detail="Ressourcen pro Planet müssen mindestens 1 sein")
+    if cfg.max_players < 1:
+        raise HTTPException(status_code=422, detail="Maximale Spieleranzahl muss mindestens 1 sein")
+
+    # 1. Wipe all game data
+    await db.users.delete_many({})
+    await db.planets.delete_many({})
+    await db.fleets.delete_many({})
+    await db.ship_designs.delete_many({})
+    await db.user_buildings.delete_many({})
+    await db.user_research.delete_many({})
+    await db.spaceport_ships.delete_many({})
+    await db.battle_reports.delete_many({})
+    await db.debris_fields.delete_many({})
+    await db.game_state.delete_many({})
+
+    # 2. Apply new config (universe_size must be set BEFORE generate_universe)
+    await db.game_config.update_one(
+        {},
+        {"$set": {
+            "universe_size":        cfg.universe_size,
+            "tick_duration":        cfg.tick_duration,
+            "max_players":          cfg.max_players,
+            "min_planet_resources": cfg.resources_per_planet,
+            "max_planet_resources": cfg.resources_per_planet,
+        }},
+        upsert=True
+    )
+    invalidate_config_cache()
+
+    # 3. Re-initialise game state
+    await init_game_state()
+
+    # 4. Generate universe with explicit planet count and resource amount
+    await generate_universe(
+        explicit_planet_count=cfg.planet_count,
+        explicit_resource_amount=cfg.resources_per_planet,
+    )
+
+    actual_planets = await db.planets.count_documents({})
+    return {
+        "message": "Neue Runde erfolgreich gestartet",
+        "universe_size":        f"{cfg.universe_size}x{cfg.universe_size}",
+        "planets_created":      actual_planets,
+        "resources_per_planet": cfg.resources_per_planet,
+        "tick_duration":        f"{cfg.tick_duration}s",
+        "max_players":          cfg.max_players,
+    }
 
 @api_router.get("/admin/stats")
 async def get_admin_stats(_: dict = Depends(require_admin)):

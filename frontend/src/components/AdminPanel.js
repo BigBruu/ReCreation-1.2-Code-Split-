@@ -6,6 +6,14 @@ import { useToast } from '../hooks/use-toast';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const DEFAULT_NEW_ROUND = {
+  resources_per_planet: 50000000,
+  planet_count: 180,
+  universe_size: 47,
+  tick_duration: 60,
+  max_players: 20,
+};
+
 const AdminPanel = () => {
   const { logout } = useAuth();
   const { toast } = useToast();
@@ -15,6 +23,8 @@ const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [inviteCodes, setInviteCodes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [newRound, setNewRound] = useState(DEFAULT_NEW_ROUND);
+  const [newRoundResult, setNewRoundResult] = useState(null);
 
   useEffect(() => {
     fetchAdminData();
@@ -93,6 +103,42 @@ const AdminPanel = () => {
     }
   };
 
+  const startNewRound = async () => {
+    if (!window.confirm(
+      `ACHTUNG: Neue Runde starten?\n\n` +
+      `Spielfeld: ${newRound.universe_size}x${newRound.universe_size}\n` +
+      `Planeten: ${newRound.planet_count}\n` +
+      `Ressourcen/Planet: ${Number(newRound.resources_per_planet).toLocaleString('de-DE')}\n` +
+      `Tick-Dauer: ${newRound.tick_duration}s\n` +
+      `Max. Spieler: ${newRound.max_players}\n\n` +
+      `Alle aktuellen Daten (Spieler, Planeten, Flotten) werden gelöscht!`
+    )) return;
+
+    try {
+      setLoading(true);
+      setNewRoundResult(null);
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/admin/new-round`, {
+        resources_per_planet: Number(newRound.resources_per_planet),
+        planet_count:         Number(newRound.planet_count),
+        universe_size:        Number(newRound.universe_size),
+        tick_duration:        Number(newRound.tick_duration),
+        max_players:          Number(newRound.max_players),
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setNewRoundResult(response.data);
+      toast({ title: "Erfolg", description: response.data.message });
+      fetchAdminData();
+    } catch (error) {
+      const detail = error.response?.data?.detail || "Neue Runde konnte nicht gestartet werden";
+      toast({ title: "Fehler", description: detail, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateConfig = async (newConfig) => {
     try {
       const token = localStorage.getItem('token');
@@ -106,6 +152,9 @@ const AdminPanel = () => {
       toast({ title: "Fehler", description: "Konfiguration konnte nicht aktualisiert werden", variant: "destructive" });
     }
   };
+
+  const fieldCls = "w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white";
+  const labelCls = "block text-sm font-medium mb-1 text-gray-300";
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -125,11 +174,12 @@ const AdminPanel = () => {
         <div className="w-64 bg-gray-900 border-r-2 border-red-500 h-screen p-4">
           <div className="space-y-2">
             {[
-              { id: 'dashboard', label: 'Dashboard', icon: '📊' },
-              { id: 'config', label: 'Konfiguration', icon: '⚙️' },
-              { id: 'users', label: 'Spieler', icon: '👥' },
-              { id: 'invites', label: 'Einladungen', icon: '🎫' },
-              { id: 'actions', label: 'Aktionen', icon: '🛠️' }
+              { id: 'dashboard',   label: 'Dashboard',    icon: '📊' },
+              { id: 'neue-runde',  label: 'Neue Runde',   icon: '🚀' },
+              { id: 'config',      label: 'Konfiguration', icon: '⚙️' },
+              { id: 'users',       label: 'Spieler',       icon: '👥' },
+              { id: 'invites',     label: 'Einladungen',   icon: '🎫' },
+              { id: 'actions',     label: 'Aktionen',      icon: '🛠️' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -146,6 +196,8 @@ const AdminPanel = () => {
         </div>
 
         <div className="flex-1 p-6">
+
+          {/* ── DASHBOARD ── */}
           {activeTab === 'dashboard' && stats && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Dashboard</h2>
@@ -177,6 +229,140 @@ const AdminPanel = () => {
             </div>
           )}
 
+          {/* ── NEUE RUNDE ── */}
+          {activeTab === 'neue-runde' && (
+            <div className="space-y-6 max-w-2xl">
+              <h2 className="text-xl font-bold">Neue Runde starten</h2>
+              <p className="text-sm text-gray-400">
+                Alle laufenden Daten (Spieler, Planeten, Flotten) werden gelöscht und das Universum
+                mit den unten angegebenen Einstellungen neu generiert.
+              </p>
+
+              <div className="bg-gray-800 p-6 rounded border border-gray-700 space-y-5">
+
+                {/* Ressourcen pro Planet */}
+                <div>
+                  <label className={labelCls}>
+                    Ressourcen pro Planet
+                  </label>
+                  <input
+                    type="number"
+                    min="1000000"
+                    max="500000000"
+                    step="1000000"
+                    value={newRound.resources_per_planet}
+                    onChange={e => setNewRound({ ...newRound, resources_per_planet: e.target.value })}
+                    className={fieldCls}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Empfehlung: 10.000.000 – 100.000.000 · Aktuell: {Number(newRound.resources_per_planet).toLocaleString('de-DE')}
+                  </p>
+                </div>
+
+                {/* Anzahl Planeten */}
+                <div>
+                  <label className={labelCls}>
+                    Anzahl Planeten mit Ressourcen
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={newRound.universe_size * newRound.universe_size}
+                    value={newRound.planet_count}
+                    onChange={e => setNewRound({ ...newRound, planet_count: e.target.value })}
+                    className={fieldCls}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Max. bei {newRound.universe_size}×{newRound.universe_size}: {newRound.universe_size * newRound.universe_size} Felder
+                  </p>
+                </div>
+
+                {/* Spielfeldgröße */}
+                <div>
+                  <label className={labelCls}>
+                    Spielfeldgröße: {newRound.universe_size}×{newRound.universe_size}
+                  </label>
+                  <input
+                    type="range"
+                    min="15"
+                    max="50"
+                    value={newRound.universe_size}
+                    onChange={e => setNewRound({ ...newRound, universe_size: Number(e.target.value) })}
+                    className="w-full accent-red-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>15×15 (klein)</span>
+                    <span>50×50 (groß)</span>
+                  </div>
+                </div>
+
+                {/* Tick-Dauer */}
+                <div>
+                  <label className={labelCls}>
+                    Tick-Dauer: {newRound.tick_duration} Sekunden
+                  </label>
+                  <input
+                    type="range"
+                    min="10"
+                    max="60"
+                    step="5"
+                    value={newRound.tick_duration}
+                    onChange={e => setNewRound({ ...newRound, tick_duration: Number(e.target.value) })}
+                    className="w-full accent-red-500"
+                  />
+                  <div className="flex justify-between text-xs text-gray-500 mt-1">
+                    <span>10s (schnell)</span>
+                    <span>60s (langsam)</span>
+                  </div>
+                </div>
+
+                {/* Maximale Spieleranzahl */}
+                <div>
+                  <label className={labelCls}>Maximale Spieleranzahl</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={newRound.max_players}
+                    onChange={e => setNewRound({ ...newRound, max_players: e.target.value })}
+                    className={fieldCls}
+                  />
+                </div>
+
+                {/* Zusammenfassung */}
+                <div className="bg-gray-900 rounded p-4 text-sm space-y-1 border border-gray-600">
+                  <p className="font-semibold text-gray-300 mb-2">Zusammenfassung der neuen Runde:</p>
+                  <p>🗺️ Spielfeld: <span className="text-white font-mono">{newRound.universe_size}×{newRound.universe_size}</span></p>
+                  <p>🪐 Planeten: <span className="text-white font-mono">{Number(newRound.planet_count).toLocaleString('de-DE')}</span></p>
+                  <p>💎 Ressourcen/Planet: <span className="text-white font-mono">{Number(newRound.resources_per_planet).toLocaleString('de-DE')}</span></p>
+                  <p>⏱️ Tick-Dauer: <span className="text-white font-mono">{newRound.tick_duration}s</span></p>
+                  <p>👥 Max. Spieler: <span className="text-white font-mono">{newRound.max_players}</span></p>
+                </div>
+
+                <button
+                  onClick={startNewRound}
+                  disabled={loading}
+                  className="w-full bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-3 rounded font-bold text-lg transition-colors"
+                >
+                  {loading ? '⏳ Wird gestartet...' : '🚀 Neue Runde starten'}
+                </button>
+              </div>
+
+              {/* Ergebnis nach Start */}
+              {newRoundResult && (
+                <div className="bg-green-900 border border-green-500 rounded p-4 space-y-1 text-sm">
+                  <p className="font-bold text-green-400 text-base">✅ {newRoundResult.message}</p>
+                  <p>Spielfeld: {newRoundResult.universe_size}</p>
+                  <p>Erstellte Planeten: <span className="font-mono text-white">{newRoundResult.planets_created}</span></p>
+                  <p>Ressourcen pro Planet: <span className="font-mono text-white">{Number(newRoundResult.resources_per_planet).toLocaleString('de-DE')}</span></p>
+                  <p>Tick-Dauer: {newRoundResult.tick_duration}</p>
+                  <p>Max. Spieler: {newRoundResult.max_players}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ── KONFIGURATION ── */}
           {activeTab === 'config' && config && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Spielkonfiguration</h2>
@@ -249,6 +435,7 @@ const AdminPanel = () => {
             </div>
           )}
 
+          {/* ── SPIELER ── */}
           {activeTab === 'users' && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Spielerverwaltung ({users.length})</h2>
@@ -292,6 +479,7 @@ const AdminPanel = () => {
             </div>
           )}
 
+          {/* ── EINLADUNGEN ── */}
           {activeTab === 'invites' && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Einladungscodes</h2>
@@ -343,11 +531,11 @@ const AdminPanel = () => {
                           </td>
                           <td className="px-4 py-2">
                             <span className={`px-2 py-1 rounded text-xs ${
-                              code.current_uses >= code.max_uses ? 'bg-red-600' : 
+                              code.current_uses >= code.max_uses ? 'bg-red-600' :
                               (code.expires_at && new Date(code.expires_at) < new Date()) ? 'bg-orange-600' :
                               'bg-green-600'
                             }`}>
-                              {code.current_uses >= code.max_uses ? 'Aufgebraucht' : 
+                              {code.current_uses >= code.max_uses ? 'Aufgebraucht' :
                                (code.expires_at && new Date(code.expires_at) < new Date()) ? 'Abgelaufen' :
                                'Aktiv'}
                             </span>
@@ -361,6 +549,7 @@ const AdminPanel = () => {
             </div>
           )}
 
+          {/* ── AKTIONEN ── */}
           {activeTab === 'actions' && (
             <div className="space-y-6">
               <h2 className="text-xl font-bold">Aktionen</h2>
@@ -380,6 +569,7 @@ const AdminPanel = () => {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>
