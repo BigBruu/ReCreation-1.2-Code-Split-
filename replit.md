@@ -18,6 +18,7 @@ A multiplayer web-based space strategy game (4X style) where players manage plan
 - **Routing**: react-router-dom
 - **Port**: 5000 (0.0.0.0 for Replit proxy)
 - **Entry**: `frontend/src/App.js`
+- **API Routing**: React dev server proxies `/api` requests to `http://localhost:8000` to keep backend traffic private while exposing only the frontend webview.
 
 ## Game Features
 - 47x47 universe grid with 7x7 Observatory view
@@ -29,9 +30,9 @@ A multiplayer web-based space strategy game (4X style) where players manage plan
 ## Environment Variables
 - `MONGO_URL`: MongoDB connection string (mongodb://localhost:27017)
 - `DB_NAME`: Database name (thecreation_authentic)
-- `REACT_APP_BACKEND_URL`: Backend URL for frontend API calls (set to Replit dev domain)
-- `SECRET_KEY`: JWT signing key (generated randomly, stored as env var)
-- `ADMIN_PASSWORD`: Admin panel password (default: admin2025, change via admin panel)
+- `REACT_APP_BACKEND_URL`: Backend URL used by frontend API calls during development
+- `SECRET_KEY`: JWT signing key
+- `ADMIN_PASSWORD`: Admin panel password
 - `CORS_ORIGINS`: Optional comma-separated list to override CORS allowed origins
 
 ## Optimierungen (umgesetzt)
@@ -45,16 +46,17 @@ A multiplayer web-based space strategy game (4X style) where players manage plan
 
 ## Startup
 The `start.sh` script:
-1. Starts MongoDB on port 27017 (persistent data in /home/runner/workspace/data/mongodb)
-2. Starts FastAPI backend on port 8000
+1. Starts MongoDB on port 27017 if it is not already running (persistent data in /home/runner/workspace/data/mongodb)
+2. Starts FastAPI backend on localhost port 8000 through `uv run`
 3. Starts React frontend on port 5000
 
 ## Package Management
-- Python packages: pip (backend/requirements.txt)
-- Node packages: yarn (frontend/package.json)
+- Python packages: uv (`pyproject.toml` / `uv.lock`)
+- Node packages: yarn (`frontend/package.json` / `frontend/yarn.lock`)
 
 ## Key Files
 - `backend/server.py` - All backend API routes and game logic
 - `frontend/src/components/game/GameInterface.js` - Main game UI
 - `frontend/src/context/AuthContext.js` - Auth state management
+- `frontend/package.json` - Frontend dependencies and `/api` proxy configuration
 - `start.sh` - Unified startup script
