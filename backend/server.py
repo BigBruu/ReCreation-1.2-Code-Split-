@@ -3,7 +3,6 @@ from starlette.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
-from pymongo import ReturnDocument
 import uuid
 import asyncio
 import logging
@@ -14,7 +13,9 @@ import string
 import time
 from app_config import ACCESS_TOKEN_EXPIRE_MINUTES, get_cors_origins
 from database import client, db
+from indexes import ensure_indexes
 from security import create_access_token, decode_token, pwd_context, security, verify_admin_password
+from services.spaceport import assign_spaceport_to_user as assign_spaceport
 
 # Create the main app
 app = FastAPI(title="TheCreation Authentic", version="2.0.0")
@@ -640,22 +641,7 @@ async def generate_universe(
         await db.planets.insert_many(planets_to_create)
 
 async def assign_spaceport_to_user(user_id: str, username: str):
-    """Assign a random planet as spaceport to new user"""
-    unoccupied_planet = await db.planets.find_one_and_update(
-        {"owner_id": None},
-        {"$set": {"owner_id": user_id, "owner_username": username}},
-        sort=[("created_at", 1)],
-        return_document=ReturnDocument.AFTER
-    )
-    if not unoccupied_planet:
-        raise HTTPException(status_code=400, detail="No available planets for spaceport")
-
-    await db.users.update_one(
-        {"id": user_id},
-        {"$set": {"spaceport_position": unoccupied_planet["position"]}}
-    )
-    
-    return unoccupied_planet
+    return await assign_spaceport(db, user_id, username)
 
 async def init_game_state():
     """Initialize game state and universe"""
@@ -2239,26 +2225,7 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    # --- Punkt 5: MongoDB-Indizes anlegen ---
-    await db.users.create_index("id", unique=True)
-    await db.users.create_index("username", unique=True)
-    await db.users.create_index("email")
-    await db.planets.create_index("id", unique=True)
-    await db.planets.create_index("owner_id")
-    await db.planets.create_index([("position.x", 1), ("position.y", 1)])
-    await db.fleets.create_index("id", unique=True)
-    await db.fleets.create_index("user_id")
-    await db.fleets.create_index([("position.x", 1), ("position.y", 1)])
-    await db.fleets.create_index("movement_end_time")
-    await db.ship_designs.create_index("id", unique=True)
-    await db.ship_designs.create_index("user_id")
-    await db.user_buildings.create_index("user_id", unique=True)
-    await db.user_research.create_index("user_id", unique=True)
-    await db.spaceport_ships.create_index("user_id")
-    await db.invite_codes.create_index("code", unique=True)
-    await db.battle_reports.create_index([("attacker_user_id", 1), ("created_at", -1)])
-    await db.battle_reports.create_index([("defender_user_id", 1), ("created_at", -1)])
-    await db.game_config.update_many({}, {"$unset": {"admin_password": ""}})
+    await ensure_indexes(db)
     logger.info("MongoDB indexes created")
 
     await init_game_state()

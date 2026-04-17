@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../hooks/use-toast';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [isAdmin, setIsAdminMode] = useState(false);
   const [formData, setFormData] = useState({ 
@@ -34,7 +36,7 @@ const LoginPage = () => {
       }
       
       setTimeout(() => {
-        window.location.href = isAdmin ? '/admin' : '/game';
+        navigate(isAdmin ? '/admin' : '/game', { replace: true });
       }, 1500);
     } catch (error) {
       toast({ title: "Fehler", description: error.message, variant: "destructive" });
