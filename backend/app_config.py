@@ -13,9 +13,16 @@ def require_env(name: str) -> str:
     return value
 
 
+def require_min_length_env(name: str, minimum: int) -> str:
+    value = require_env(name)
+    if len(value.encode("utf-8")) < minimum:
+        raise RuntimeError(f"{name} must be at least {minimum} bytes long")
+    return value
+
+
 MONGO_URL = require_env("MONGO_URL")
 DB_NAME = require_env("DB_NAME")
-SECRET_KEY = require_env("SECRET_KEY")
+SECRET_KEY = require_min_length_env("SECRET_KEY", 32)
 ADMIN_PASSWORD = require_env("ADMIN_PASSWORD")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", str(24 * 60)))

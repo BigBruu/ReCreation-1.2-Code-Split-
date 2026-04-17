@@ -15,7 +15,7 @@ else
 fi
 
 cd /home/runner/workspace/backend
-uv run --project /home/runner/workspace uvicorn server:app --host localhost --port 8000 &
+uv run --project /home/runner/workspace uvicorn --app-dir /home/runner/workspace/backend server:app --host localhost --port 8000 &
 echo "Backend started on port 8000"
 
 cd /home/runner/workspace/frontend
