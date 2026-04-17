@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# Start MongoDB in background
-mkdir -p /tmp/mongodb-data
-mongod --dbpath /tmp/mongodb-data --port 27017 --bind_ip 127.0.0.1 --logpath /tmp/mongodb.log --fork
-echo "MongoDB started"
+# Start MongoDB with persistent data directory
+MONGO_DATA_DIR="/home/runner/workspace/data/mongodb"
+mkdir -p "$MONGO_DATA_DIR"
+mongod --dbpath "$MONGO_DATA_DIR" --port 27017 --bind_ip 127.0.0.1 --logpath /tmp/mongodb.log --fork
+echo "MongoDB started (persistent data: $MONGO_DATA_DIR)"
 
 # Start backend in background
 cd /home/runner/workspace/backend
-MONGO_URL=mongodb://localhost:27017 DB_NAME=thecreation_authentic uvicorn server:app --host localhost --port 8000 &
+uvicorn server:app --host localhost --port 8000 &
 echo "Backend started on port 8000"
 
 # Start frontend

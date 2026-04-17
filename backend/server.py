@@ -15,6 +15,9 @@ import asyncio
 import logging
 import math
 import random
+import secrets
+import string
+import time
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -24,8 +27,8 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Security
-SECRET_KEY = "thecreation-authentic-2025"
+# Security – key comes from environment, never hardcoded
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-change-me-in-production')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60
 
@@ -306,7 +309,7 @@ class GameConfig(BaseModel):
     mining_efficiency: float = 1.0  # Multiplier for mining operations
     colonization_time_hours: int = 24  # Time to colonize a planet
     noob_protection_hours: int = 48
-    admin_password: str = "admin2025"
+    admin_password: str = Field(default_factory=lambda: os.environ.get('ADMIN_PASSWORD', 'admin2025'))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class InviteCode(BaseModel):
@@ -473,12 +476,30 @@ async def init_game_config():
         return config
     return GameConfig(**existing_config)
 
-async def get_game_config():
-    """Get current game configuration"""
-    config = await db.game_config.find_one()
-    if not config:
-        return await init_game_config()
-    return GameConfig(**config)
+# --- CONFIG CACHE (Punkt 7) ---
+_config_cache: Optional[GameConfig] = None
+_config_cache_time: float = 0.0
+_CONFIG_CACHE_TTL: float = 10.0  # seconds
+
+async def get_game_config() -> GameConfig:
+    """Get current game configuration – cached for 10 seconds"""
+    global _config_cache, _config_cache_time
+    now = time.monotonic()
+    if _config_cache is not None and (now - _config_cache_time) < _CONFIG_CACHE_TTL:
+        return _config_cache
+    config_doc = await db.game_config.find_one()
+    if not config_doc:
+        config = await init_game_config()
+    else:
+        config = GameConfig(**config_doc)
+    _config_cache = config
+    _config_cache_time = now
+    return config
+
+def invalidate_config_cache():
+    """Call after any config update to force a fresh read"""
+    global _config_cache
+    _config_cache = None
 
 
 async def verify_admin_access(password: str):
@@ -765,7 +786,6 @@ async def process_combat(attacker_fleet: Fleet, defender_fleet: Fleet, game_stat
     debris_info = None
     total_debris = sum(total_debris_cost.values())
     if total_debris > 0:
-        import random
         resource_types = ["food", "metal", "hydrogen"]
         debris_resource = random.choice(resource_types)
         debris_amount = total_debris
@@ -1192,6 +1212,7 @@ async def update_admin_config(config_update: UpdateGameConfig, credentials: HTTP
     update_data = {k: v for k, v in config_update.dict().items() if v is not None}
     
     await db.game_config.update_one({}, {"$set": update_data})
+    invalidate_config_cache()
     return {"message": "Configuration updated successfully"}
 
 @api_router.post("/admin/invite-codes", response_model=InviteCode)
@@ -1205,7 +1226,7 @@ async def create_invite_code(invite_data: CreateInviteCode, credentials: HTTPAut
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     
-    code = ''.join(__import__('secrets').choice(__import__('string').ascii_uppercase + __import__('string').digits) for _ in range(8))
+    code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
     expires_at = None
     if invite_data.expires_in_hours:
         expires_at = datetime.utcnow() + timedelta(hours=invite_data.expires_in_hours)
@@ -1262,22 +1283,32 @@ async def get_all_users(credentials: HTTPAuthorizationCredentials = Depends(secu
         raise HTTPException(status_code=401, detail="Invalid token")
     
     users = await db.users.find().sort("created_at", -1).to_list(100)
-    user_list = []
-    for user in users:
-        planet_count = await db.planets.count_documents({"owner_id": user["id"]})
-        fleet_count = await db.fleets.count_documents({"user_id": user["id"]})
-        user_list.append({
+    user_ids = [u["id"] for u in users]
+
+    planet_pipeline = [
+        {"$match": {"owner_id": {"$in": user_ids}}},
+        {"$group": {"_id": "$owner_id", "count": {"$sum": 1}}}
+    ]
+    fleet_pipeline = [
+        {"$match": {"user_id": {"$in": user_ids}}},
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+    ]
+    planet_counts = {doc["_id"]: doc["count"] async for doc in db.planets.aggregate(planet_pipeline)}
+    fleet_counts  = {doc["_id"]: doc["count"] async for doc in db.fleets.aggregate(fleet_pipeline)}
+
+    return [
+        {
             "id": user["id"],
             "username": user["username"],
             "email": user["email"],
             "points": user.get("points", 0),
-            "planets": planet_count,
-            "fleets": fleet_count,
+            "planets": planet_counts.get(user["id"], 0),
+            "fleets":  fleet_counts.get(user["id"], 0),
             "created_at": user["created_at"],
-            "spaceport_position": user.get("spaceport_position", {"x": -1, "y": -1})
-        })
-    
-    return user_list
+            "spaceport_position": user.get("spaceport_position", {"x": -1, "y": -1}),
+        }
+        for user in users
+    ]
 
 @api_router.delete("/admin/users/{user_id}")
 async def delete_user(user_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -1827,19 +1858,33 @@ async def collect_debris(debris_id: str, current_user: User = Depends(get_curren
 
 @api_router.get("/game/rankings")
 async def get_rankings():
+    # Fetch all counts in 2 aggregations instead of 2×N single queries (Punkt 6)
     users = await db.users.find().sort("points", -1).to_list(MAX_PLAYERS)
-    rankings = []
-    for i, user in enumerate(users):
-        planet_count = await db.planets.count_documents({"owner_id": user["id"]})
-        fleet_count = await db.fleets.count_documents({"user_id": user["id"]})
-        rankings.append({
+
+    user_ids = [u["id"] for u in users]
+
+    planet_pipeline = [
+        {"$match": {"owner_id": {"$in": user_ids}}},
+        {"$group": {"_id": "$owner_id", "count": {"$sum": 1}}}
+    ]
+    fleet_pipeline = [
+        {"$match": {"user_id": {"$in": user_ids}}},
+        {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+    ]
+
+    planet_counts = {doc["_id"]: doc["count"] async for doc in db.planets.aggregate(planet_pipeline)}
+    fleet_counts  = {doc["_id"]: doc["count"] async for doc in db.fleets.aggregate(fleet_pipeline)}
+
+    return [
+        {
             "rank": i + 1,
             "username": user["username"],
-            "points": user["points"],
-            "planets": planet_count,
-            "fleets": fleet_count
-        })
-    return rankings
+            "points": user.get("points", 0),
+            "planets": planet_counts.get(user["id"], 0),
+            "fleets":  fleet_counts.get(user["id"], 0),
+        }
+        for i, user in enumerate(users)
+    ]
 
 # --- BUILDING HELPER FUNCTIONS ---
 async def init_user_buildings(user_id: str) -> UserBuildings:
@@ -2162,11 +2207,24 @@ async def stop_automatic_tick_system():
 # Include router
 app.include_router(api_router)
 
-# CORS
+# CORS – Punkt 3: auf eigene Domain beschränken, Wildcard nur als Fallback
+_replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+_cors_origins_env = os.environ.get('CORS_ORIGINS', '')
+if _cors_origins_env:
+    _allowed_origins = _cors_origins_env.split(',')
+elif _replit_domain:
+    _allowed_origins = [
+        f"https://{_replit_domain}",
+        "http://localhost:5000",
+        "http://0.0.0.0:5000",
+    ]
+else:
+    _allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=_allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -2180,6 +2238,27 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
+    # --- Punkt 5: MongoDB-Indizes anlegen ---
+    await db.users.create_index("id", unique=True)
+    await db.users.create_index("username", unique=True)
+    await db.users.create_index("email")
+    await db.planets.create_index("id", unique=True)
+    await db.planets.create_index("owner_id")
+    await db.planets.create_index([("position.x", 1), ("position.y", 1)])
+    await db.fleets.create_index("id", unique=True)
+    await db.fleets.create_index("user_id")
+    await db.fleets.create_index([("position.x", 1), ("position.y", 1)])
+    await db.fleets.create_index("movement_end_time")
+    await db.ship_designs.create_index("id", unique=True)
+    await db.ship_designs.create_index("user_id")
+    await db.user_buildings.create_index("user_id", unique=True)
+    await db.user_research.create_index("user_id", unique=True)
+    await db.spaceport_ships.create_index("user_id")
+    await db.invite_codes.create_index("code", unique=True)
+    await db.battle_reports.create_index([("attacker_user_id", 1), ("created_at", -1)])
+    await db.battle_reports.create_index([("defender_user_id", 1), ("created_at", -1)])
+    logger.info("MongoDB indexes created")
+
     await init_game_state()
     logger.info("TheCreation Authentic Game Engine started!")
     
