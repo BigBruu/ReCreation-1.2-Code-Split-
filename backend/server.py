@@ -1,15 +1,9 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
-from dotenv import load_dotenv
-from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
-from passlib.context import CryptContext
-import jwt
-import os
+from pymongo import ReturnDocument
 import uuid
 import asyncio
 import logging
@@ -18,22 +12,9 @@ import random
 import secrets
 import string
 import time
-
-ROOT_DIR = Path(__file__).parent
-load_dotenv(ROOT_DIR / '.env')
-
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
-
-# Security – key comes from environment, never hardcoded
-SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-change-me-in-production')
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-security = HTTPBearer()
+from app_config import ACCESS_TOKEN_EXPIRE_MINUTES, get_cors_origins
+from database import client, db
+from security import create_access_token, decode_token, pwd_context, security, verify_admin_password
 
 # Create the main app
 app = FastAPI(title="TheCreation Authentic", version="2.0.0")
@@ -309,7 +290,6 @@ class GameConfig(BaseModel):
     mining_efficiency: float = 1.0  # Multiplier for mining operations
     colonization_time_hours: int = 24  # Time to colonize a planet
     noob_protection_hours: int = 48
-    admin_password: str = Field(default_factory=lambda: os.environ.get('ADMIN_PASSWORD', 'admin2025'))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class InviteCode(BaseModel):
@@ -447,25 +427,10 @@ RESEARCH_BASE_COSTS = {
     }
 }
 
-# --- AUTH FUNCTIONS ---
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-    except jwt.PyJWTError:
+async def get_current_user(credentials = Depends(security)):
+    payload = decode_token(credentials)
+    username: str = payload.get("sub")
+    if username is None or payload.get("admin"):
         raise HTTPException(status_code=401, detail="Invalid token")
     
     user = await db.users.find_one({"username": username})
@@ -473,16 +438,12 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="User not found")
     return User(**user)
 
-# --- Punkt 8: Admin-Auth als zentrale Dependency ---
-async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+async def require_admin(credentials = Depends(security)) -> dict:
     """FastAPI dependency – validates the bearer token and enforces admin flag."""
-    try:
-        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-        return payload
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+    payload = decode_token(credentials)
+    if not payload.get("admin"):
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return payload
 
 # --- ADMIN FUNCTIONS ---
 async def init_game_config():
@@ -522,8 +483,7 @@ def invalidate_config_cache():
 
 async def verify_admin_access(password: str):
     """Verify admin password"""
-    config = await get_game_config()
-    return password == config.admin_password
+    return verify_admin_password(password)
 
 async def init_user_research(user_id: str):
     """Initialize research levels for a new user - all start at level 0"""
@@ -681,18 +641,15 @@ async def generate_universe(
 
 async def assign_spaceport_to_user(user_id: str, username: str):
     """Assign a random planet as spaceport to new user"""
-    # Find an unoccupied planet
-    unoccupied_planet = await db.planets.find_one({"owner_id": None})
+    unoccupied_planet = await db.planets.find_one_and_update(
+        {"owner_id": None},
+        {"$set": {"owner_id": user_id, "owner_username": username}},
+        sort=[("created_at", 1)],
+        return_document=ReturnDocument.AFTER
+    )
     if not unoccupied_planet:
         raise HTTPException(status_code=400, detail="No available planets for spaceport")
-    
-    # Assign planet to user
-    await db.planets.update_one(
-        {"id": unoccupied_planet["id"]},
-        {"$set": {"owner_id": user_id, "owner_username": username}}
-    )
-    
-    # Update user's spaceport position
+
     await db.users.update_one(
         {"id": user_id},
         {"$set": {"spaceport_position": unoccupied_planet["position"]}}
@@ -1224,6 +1181,19 @@ async def login(user_data: UserLogin):
 @api_router.get("/me", response_model=User)
 async def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@api_router.get("/auth/session")
+async def get_auth_session(credentials = Depends(security)):
+    payload = decode_token(credentials)
+    is_admin = bool(payload.get("admin"))
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    if not is_admin:
+        user = await db.users.find_one({"username": username})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+    return {"username": username, "admin": is_admin}
 
 # --- ADMIN ROUTES ---
 @api_router.post("/admin/login")
@@ -2252,24 +2222,10 @@ async def stop_automatic_tick_system():
 # Include router
 app.include_router(api_router)
 
-# CORS – Punkt 3: auf eigene Domain beschränken, Wildcard nur als Fallback
-_replit_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
-_cors_origins_env = os.environ.get('CORS_ORIGINS', '')
-if _cors_origins_env:
-    _allowed_origins = _cors_origins_env.split(',')
-elif _replit_domain:
-    _allowed_origins = [
-        f"https://{_replit_domain}",
-        "http://localhost:5000",
-        "http://0.0.0.0:5000",
-    ]
-else:
-    _allowed_origins = ["*"]
-
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=_allowed_origins,
+    allow_origins=get_cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -2302,6 +2258,7 @@ async def startup_event():
     await db.invite_codes.create_index("code", unique=True)
     await db.battle_reports.create_index([("attacker_user_id", 1), ("created_at", -1)])
     await db.battle_reports.create_index([("defender_user_id", 1), ("created_at", -1)])
+    await db.game_config.update_many({}, {"$unset": {"admin_password": ""}})
     logger.info("MongoDB indexes created")
 
     await init_game_state()

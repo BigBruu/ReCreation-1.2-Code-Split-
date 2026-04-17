@@ -4,9 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../hooks/use-toast';
 import Observatory from './Observatory';
 import ShipDesignCalculator from './ShipDesignCalculator';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API } from '../../lib/api';
 
 const GameInterface = () => {
   const { user, logout } = useAuth();

@@ -11,9 +11,6 @@ packages = ["cargo", "libiconv", "libxcrypt", "rustc"]
 [userenv.shared]
 MONGO_URL = "mongodb://localhost:27017"
 DB_NAME = "thecreation_authentic"
-REACT_APP_BACKEND_URL = "https://5a06de9e-ef2b-402b-b5da-ab3665bc459e-00-1b6cy4fmecsoq.worf.replit.dev"
-SECRET_KEY = "383c97fcc322b07443803c1375e5d8c8d11a408e2d919e07c84ff1fe8100ab02"
-ADMIN_PASSWORD = "admin2025"
 
 [workflows]
 runButton = "Project"

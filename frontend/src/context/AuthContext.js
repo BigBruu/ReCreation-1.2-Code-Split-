@@ -1,8 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+import { API } from '../lib/api';
 
 // Auth Context
 const AuthContext = createContext();
@@ -19,26 +17,42 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(token));
 
   useEffect(() => {
     if (token) {
-      const storedIsAdmin = localStorage.getItem('isAdmin') === 'true';
-      setIsAdmin(storedIsAdmin);
-      
-      if (!storedIsAdmin) {
-        fetchUser();
-      }
+      validateSession(token);
     } else {
       setIsAdmin(false);
-      localStorage.removeItem('isAdmin');
+      setUser(null);
+      setLoading(false);
     }
   }, [token]);
 
-  const fetchUser = async () => {
+  const validateSession = async (authToken) => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API}/auth/session`, {
+        headers: { Authorization: `Bearer ${authToken}` }
+      });
+      const admin = Boolean(response.data.admin);
+      setIsAdmin(admin);
+      if (admin) {
+        setUser(null);
+      } else {
+        await fetchUser(authToken);
+      }
+    } catch (error) {
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUser = async (authToken = token) => {
     try {
       const response = await axios.get(`${API}/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${authToken}` }
       });
       setUser(response.data);
     } catch (error) {
@@ -49,8 +63,6 @@ export const AuthProvider = ({ children }) => {
   const login = async (username, password) => {
     setLoading(true);
     try {
-      localStorage.removeItem('isAdmin');
-      
       const response = await axios.post(`${API}/login`, { username, password });
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
@@ -70,7 +82,6 @@ export const AuthProvider = ({ children }) => {
       const response = await axios.post(`${API}/admin/login`, { password });
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
-      localStorage.setItem('isAdmin', 'true');
       setToken(access_token);
       setIsAdmin(true);
       return true;
@@ -84,8 +95,6 @@ export const AuthProvider = ({ children }) => {
   const register = async (username, email, password, inviteCode) => {
     setLoading(true);
     try {
-      localStorage.removeItem('isAdmin');
-      
       const response = await axios.post(`${API}/register`, { 
         username, 
         email, 
@@ -106,7 +115,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('isAdmin');
     setToken(null);
     setUser(null);
     setIsAdmin(false);

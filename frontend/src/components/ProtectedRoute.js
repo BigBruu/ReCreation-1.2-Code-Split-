@@ -3,7 +3,11 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const ProtectedRoute = ({ children }) => {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Lade...</div>;
+  }
   
   if (!token) {
     return <Navigate to="/login" replace />;
@@ -17,7 +21,11 @@ export const ProtectedRoute = ({ children }) => {
 };
 
 export const AdminRoute = ({ children }) => {
-  const { token, isAdmin } = useAuth();
+  const { token, isAdmin, loading } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen bg-black text-white flex items-center justify-center">Lade...</div>;
+  }
   
   if (!token) {
     return <Navigate to="/login" replace />;

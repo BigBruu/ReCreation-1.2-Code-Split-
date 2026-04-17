@@ -1,4 +1,9 @@
 #!/bin/bash
+set -e
+
+pkill -f "uvicorn server:app" 2>/dev/null || true
+pkill -f "craco start" 2>/dev/null || true
+pkill -f "react-scripts start" 2>/dev/null || true
 
 MONGO_DATA_DIR="/home/runner/workspace/data/mongodb"
 mkdir -p "$MONGO_DATA_DIR"
@@ -14,4 +19,5 @@ uv run --project /home/runner/workspace uvicorn server:app --host localhost --po
 echo "Backend started on port 8000"
 
 cd /home/runner/workspace/frontend
-HOST=0.0.0.0 PORT=5000 DANGEROUSLY_DISABLE_HOST_CHECK=true REACT_APP_BACKEND_URL=https://$REPLIT_DEV_DOMAIN node_modules/.bin/craco start
+unset REACT_APP_BACKEND_URL
+HOST=0.0.0.0 PORT=5000 CI=true BROWSER=none DANGEROUSLY_DISABLE_HOST_CHECK=true yarn start

@@ -14,7 +14,6 @@ const Observatory = ({ centerPosition, onPositionChange, view, onFieldClick, use
       const dominantResource = Math.max(
         planet.resources.food,
         planet.resources.metal, 
-        planet.resources.silicon,
         planet.resources.hydrogen
       );
       
