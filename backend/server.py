@@ -466,6 +466,17 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(status_code=401, detail="User not found")
     return User(**user)
 
+# --- Punkt 8: Admin-Auth als zentrale Dependency ---
+async def require_admin(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+    """FastAPI dependency – validates the bearer token and enforces admin flag."""
+    try:
+        payload = jwt.decode(credentials.credentials, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("admin"):
+            raise HTTPException(status_code=403, detail="Admin access required")
+        return payload
+    except jwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
 # --- ADMIN FUNCTIONS ---
 async def init_game_config():
     """Initialize game configuration"""
@@ -610,16 +621,18 @@ async def generate_universe():
     }
     
     planets_to_create = []
-    
+    occupied_positions: set = set()  # Punkt 11: O(1) Kollisionsprüfung statt O(n²)
+
     # Generate planets based on universe size
     planet_count = int((universe_size * universe_size) * 0.08)  # ~8% of fields have planets
     for i in range(planet_count):
         x = random.randint(0, universe_size - 1)
         y = random.randint(0, universe_size - 1)
-        
-        # Skip if position already has a planet
-        if any(p["position"]["x"] == x and p["position"]["y"] == y for p in planets_to_create):
+
+        # Skip if position already has a planet – O(1) set lookup
+        if (x, y) in occupied_positions:
             continue
+        occupied_positions.add((x, y))
             
         planet_type = random.choice(list(PLANET_TYPES.keys()))
         base_resources = PLANET_TYPES[planet_type]["base_resources"].copy()
@@ -1012,67 +1025,91 @@ async def process_tick():
                     processed_fleets.add(fleet2.id)
                     logger.info(f"Combat at ({pos_key}): {attacker.name} vs {defender.name} - Winner: {battle_report.winner}")
     
-    # Process mining operations for stationary fleets
+    # Process mining operations for stationary fleets (Punkt 12)
     stationary_fleets = await db.fleets.find({"movement_end_time": None}).to_list(1000)
     for fleet_data in stationary_fleets:
         fleet = Fleet(**fleet_data)
-        
-        # Check if fleet is on a planet
+
+        # Mine any planet at the fleet's position (owned OR unowned)
         planet = await db.planets.find_one({
             "position.x": fleet.position.x,
             "position.y": fleet.position.y,
-            "owner_id": fleet.user_id  # Only mine from owned planets
         })
-        
-        if planet:
-            planet_obj = Planet(**planet)
-            
-            # Calculate total mining capacity of this fleet
-            total_mining_capacity = 0
-            for ship_group in fleet.ships:
-                design = await db.ship_designs.find_one({"id": ship_group["design_id"]})
-                if design:
-                    design_obj = ShipDesign(**design)
-                    mining_capacity = design_obj.calculated_stats.get("mining_capacity", 0)
-                    total_mining_capacity += mining_capacity * ship_group["quantity"]
-            
-            if total_mining_capacity > 0:
-                # Mine resources proportionally
-                mining_efficiency = config.mining_efficiency
-                actual_mining = int(total_mining_capacity * mining_efficiency)
-                
-                # Distribute mining across resource types based on availability (NO SILICON)
-                total_resources = (planet_obj.resources.food + planet_obj.resources.metal + 
-                                 planet_obj.resources.hydrogen)
-                
-                if total_resources > 0:
-                    # Calculate proportional mining
-                    food_ratio = planet_obj.resources.food / total_resources
-                    metal_ratio = planet_obj.resources.metal / total_resources
-                    hydrogen_ratio = planet_obj.resources.hydrogen / total_resources
-                    
-                    food_mined = min(int(actual_mining * food_ratio), planet_obj.resources.food)
-                    metal_mined = min(int(actual_mining * metal_ratio), planet_obj.resources.metal)
-                    hydrogen_mined = min(int(actual_mining * hydrogen_ratio), planet_obj.resources.hydrogen)
-                    
-                    # Update planet resources (subtract mined)
-                    await db.planets.update_one(
-                        {"id": planet_obj.id},
-                        {"$inc": {
-                            "resources.food": -food_mined,
-                            "resources.metal": -metal_mined,
-                            "resources.hydrogen": -hydrogen_mined
-                        }}
-                    )
-                    
-                    # Add mined resources to user's total (for now, we could implement cargo ships later)
-                    # For simplicity, we'll add points to the user
-                    resources_value = food_mined + metal_mined + hydrogen_mined
-                    if resources_value > 0:
-                        await db.users.update_one(
-                            {"id": fleet.user_id},
-                            {"$inc": {"points": resources_value // 1000}}  # 1 point per 1000 resources
-                        )
+
+        if not planet:
+            continue
+
+        planet_obj = Planet(**planet)
+
+        # Calculate total mining capacity of this fleet
+        total_mining_capacity = 0
+        for ship_group in fleet.ships:
+            design = await db.ship_designs.find_one({"id": ship_group["design_id"]})
+            if design:
+                design_obj = ShipDesign(**design)
+                mining_capacity = design_obj.calculated_stats.get("mining_capacity", 0)
+                total_mining_capacity += mining_capacity * ship_group["quantity"]
+
+        if total_mining_capacity <= 0:
+            continue
+
+        # Mine resources proportionally from the planet (NO SILICON)
+        actual_mining = int(total_mining_capacity * config.mining_efficiency)
+        total_resources = (planet_obj.resources.food + planet_obj.resources.metal +
+                           planet_obj.resources.hydrogen)
+
+        if total_resources <= 0:
+            continue
+
+        food_ratio     = planet_obj.resources.food     / total_resources
+        metal_ratio    = planet_obj.resources.metal    / total_resources
+        hydrogen_ratio = planet_obj.resources.hydrogen / total_resources
+
+        food_mined     = min(int(actual_mining * food_ratio),     planet_obj.resources.food)
+        metal_mined    = min(int(actual_mining * metal_ratio),    planet_obj.resources.metal)
+        hydrogen_mined = min(int(actual_mining * hydrogen_ratio), planet_obj.resources.hydrogen)
+
+        # Subtract mined amount from the source planet
+        await db.planets.update_one(
+            {"id": planet_obj.id},
+            {"$inc": {
+                "resources.food":     -food_mined,
+                "resources.metal":    -metal_mined,
+                "resources.hydrogen": -hydrogen_mined,
+            }}
+        )
+
+        # Find the fleet owner's home (spaceport) planet to deposit resources
+        miner_user = await db.users.find_one({"id": fleet.user_id})
+        if miner_user:
+            spaceport_pos = miner_user.get("spaceport_position", {})
+            home_planet = await db.planets.find_one({
+                "owner_id": fleet.user_id,
+                "position.x": spaceport_pos.get("x", -1),
+                "position.y": spaceport_pos.get("y", -1),
+            })
+            # Fallback: any owned planet
+            if not home_planet:
+                home_planet = await db.planets.find_one({"owner_id": fleet.user_id})
+
+            if home_planet and home_planet["id"] != planet_obj.id:
+                # Deposit to home planet (different from the mined planet)
+                await db.planets.update_one(
+                    {"id": home_planet["id"]},
+                    {"$inc": {
+                        "resources.food":     food_mined,
+                        "resources.metal":    metal_mined,
+                        "resources.hydrogen": hydrogen_mined,
+                    }}
+                )
+
+        # Award points proportional to what was mined
+        resources_value = food_mined + metal_mined + hydrogen_mined
+        if resources_value > 0:
+            await db.users.update_one(
+                {"id": fleet.user_id},
+                {"$inc": {"points": resources_value // 1000}}
+            )
     
     # Update game state with configured tick duration
     next_tick_time = datetime.utcnow() + timedelta(seconds=config.tick_duration)
@@ -1186,46 +1223,21 @@ async def admin_login(admin_data: AdminLogin):
     return {"access_token": access_token, "token_type": "bearer", "admin": True}
 
 @api_router.get("/admin/config", response_model=GameConfig)
-async def get_admin_config(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_admin_config(_: dict = Depends(require_admin)):
     """Get game configuration (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     return await get_game_config()
 
 @api_router.post("/admin/config")
-async def update_admin_config(config_update: UpdateGameConfig, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def update_admin_config(config_update: UpdateGameConfig, _: dict = Depends(require_admin)):
     """Update game configuration (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     update_data = {k: v for k, v in config_update.dict().items() if v is not None}
-    
     await db.game_config.update_one({}, {"$set": update_data})
     invalidate_config_cache()
     return {"message": "Configuration updated successfully"}
 
 @api_router.post("/admin/invite-codes", response_model=InviteCode)
-async def create_invite_code(invite_data: CreateInviteCode, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def create_invite_code(invite_data: CreateInviteCode, _: dict = Depends(require_admin)):
     """Create new invite code (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(8))
     expires_at = None
     if invite_data.expires_in_hours:
@@ -1236,52 +1248,26 @@ async def create_invite_code(invite_data: CreateInviteCode, credentials: HTTPAut
         max_uses=invite_data.max_uses,
         expires_at=expires_at
     )
-    
     await db.invite_codes.insert_one(invite_code.dict())
     return invite_code
 
 @api_router.get("/admin/invite-codes", response_model=List[InviteCode])
-async def get_invite_codes(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_invite_codes(_: dict = Depends(require_admin)):
     """Get all invite codes (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     codes = await db.invite_codes.find().sort("created_at", -1).to_list(100)
     return [InviteCode(**code) for code in codes]
 
 @api_router.delete("/admin/invite-codes/{code_id}")
-async def delete_invite_code(code_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_invite_code(code_id: str, _: dict = Depends(require_admin)):
     """Delete invite code (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     result = await db.invite_codes.delete_one({"id": code_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Invite code not found")
-    
     return {"message": "Invite code deleted successfully"}
 
 @api_router.get("/admin/users")
-async def get_all_users(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_all_users(_: dict = Depends(require_admin)):
     """Get all users (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     users = await db.users.find().sort("created_at", -1).to_list(100)
     user_ids = [u["id"] for u in users]
 
@@ -1311,69 +1297,50 @@ async def get_all_users(credentials: HTTPAuthorizationCredentials = Depends(secu
     ]
 
 @api_router.delete("/admin/users/{user_id}")
-async def delete_user(user_id: str, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def delete_user(user_id: str, _: dict = Depends(require_admin)):
     """Delete user (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Delete user's planets, fleets, ship designs
-    await db.planets.update_many({"owner_id": user_id}, {"$set": {"owner_id": None, "owner_username": None}})
-    await db.fleets.delete_many({"user_id": user_id})
-    await db.ship_designs.delete_many({"user_id": user_id})
-    
-    # Delete user
     result = await db.users.delete_one({"id": user_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
+    # Punkt 14: vollständige Bereinigung aller User-Daten
+    await db.planets.update_many({"owner_id": user_id}, {"$set": {"owner_id": None, "owner_username": None}})
+    await db.fleets.delete_many({"user_id": user_id})
+    await db.ship_designs.delete_many({"user_id": user_id})
+    await db.user_buildings.delete_one({"user_id": user_id})
+    await db.user_research.delete_one({"user_id": user_id})
+    await db.spaceport_ships.delete_many({"user_id": user_id})
+
     return {"message": "User deleted successfully"}
 
 @api_router.post("/admin/reset-game")
-async def reset_game(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def reset_game(_: dict = Depends(require_admin)):
     """Reset entire game (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     # Delete all game data except admin config and invite codes
     await db.users.delete_many({})
     await db.planets.delete_many({})
     await db.fleets.delete_many({})
     await db.ship_designs.delete_many({})
+    await db.user_buildings.delete_many({})
+    await db.user_research.delete_many({})
+    await db.spaceport_ships.delete_many({})
+    await db.battle_reports.delete_many({})
+    await db.debris_fields.delete_many({})
     await db.game_state.delete_many({})
-    
-    # Reinitialize game
+    invalidate_config_cache()
     await init_game_state()
-    
     return {"message": "Game reset successfully"}
 
 @api_router.get("/admin/stats")
-async def get_admin_stats(credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_admin_stats(_: dict = Depends(require_admin)):
     """Get game statistics (admin only)"""
-    try:
-        token = credentials.credentials
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if not payload.get("admin"):
-            raise HTTPException(status_code=403, detail="Admin access required")
-    except jwt.PyJWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    
     config = await get_game_config()
     user_count = await db.users.count_documents({})
     planet_count = await db.planets.count_documents({})
     occupied_planets = await db.planets.count_documents({"owner_id": {"$ne": None}})
     fleet_count = await db.fleets.count_documents({})
     invite_codes = await db.invite_codes.count_documents({})
-    
+
     return {
         "players": {"current": user_count, "max": config.max_players},
         "planets": {"total": planet_count, "occupied": occupied_planets},
